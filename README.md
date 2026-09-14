@@ -89,8 +89,6 @@ publishes `/joint_states`, so the whole pipeline closes in simulation and the ar
 
 ![The real and simulated paths share every algorithm node; only the motor interface differs](docs/figures/architecture.png)
 
-*Only the highlighted box changes. Every algorithm node is the same binary in both paths.*
-
 The original never used MoveIt or `ros2_control` — it runs its own KDL kinematics and commands the
 motors directly in MIT mode. That is why substituting one box is enough to test the whole thing.
 

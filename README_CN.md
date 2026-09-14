@@ -87,8 +87,6 @@ ros2 run arm_control teach_one_node                   # 重力补偿下手动示
 
 ![实机链路与仿真链路共用全部算法节点，只有电机接口不同](docs/figures/architecture.png)
 
-*只有高亮的那个方框被替换。两种路径下每个算法节点都是同一个二进制。*
-
 原工程从不经过 MoveIt 或 `ros2_control` —— 它自己跑 KDL 运动学、以 MIT 模式直接下发电机指令。
 正因如此，替换一个方框就足以测试整条链路。
 
