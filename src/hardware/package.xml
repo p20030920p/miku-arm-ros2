@@ -3,7 +3,9 @@
 <package format="3">
   <name>hardware</name>
   <version>0.1.0</version>
-  <description>机械臂上下位机串口通信 + 轨迹复现 + 手柄/夹爪测试节点 —— ROS 2 Jazzy 移植版</description>
+  <description>
+    Serial interface to the Damiao motor driver board, plus trajectory replay, teaching recorder and bench-test nodes.
+  </description>
 
   <maintainer email="1824896675@qq.com">lb86</maintainer>
   <license>MIT</license>

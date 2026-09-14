@@ -2,18 +2,16 @@
 
 # miku-arm-ros2
 
-**达妙电机六轴机械臂，从 ROS 1 Noetic 移植到 ROS 2 Jazzy —— 并在没有实机的情况下完成验证**
+**达妙电机六轴机械臂（含夹爪）的 ROS 2 Jazzy 驱动与控制库**
 
-<sub>catkin → ament · <b>roscpp</b> → rclcpp · 逐字节复现驱动板二进制协议 · 整条链路在仿真中闭环</sub>
+<sub>KDL 正逆运动学 · 重力补偿 · 轨迹复现与示教 · ArUco / RealSense 位姿估计</sub>
 
 [![ROS 2](https://img.shields.io/badge/ROS%202-Jazzy-22314E?logo=ros&logoColor=white)](https://docs.ros.org/en/jazzy/)
-[![Ubuntu](https://img.shields.io/badge/Ubuntu-24.04-E95420?logo=ubuntu&logoColor=white)](#快速开始)
-[![C++17](https://img.shields.io/badge/C%2B%2B-17-00599C?logo=cplusplus&logoColor=white)](https://en.cppreference.com/w/cpp/17)
-[![Packages](https://img.shields.io/badge/colcon-7%20packages-success)](#快速开始)
-[![Protocol](https://img.shields.io/badge/串口协议-7%2F7-success)](#验证)
-[![Simulation](https://img.shields.io/badge/仿真端到端-6%2F6-success)](#验证)
+[![Ubuntu](https://img.shields.io/badge/Ubuntu-24.04-E95420?logo=ubuntu&logoColor=white)](#构建)
+[![C++17](https://img.shields.io/badge/C%2B%2B-17-00599C?logo=cplusplus&logoColor=white)](#构建)
+[![License](https://img.shields.io/badge/license-MIT-3DA639)](LICENSE)
 
-[快速开始](#快速开始) &nbsp;•&nbsp; [两个替代品](#两个替代品) &nbsp;•&nbsp; [验证](#验证) &nbsp;•&nbsp; [文档](#文档)
+[构建](#构建) &nbsp;•&nbsp; [使用硬件](#使用硬件) &nbsp;•&nbsp; [无硬件仿真](#无硬件仿真) &nbsp;•&nbsp; [验证](#验证) &nbsp;•&nbsp; [文档](#文档)
 
 *[English](README.md) &nbsp;|&nbsp; 中文*
 
@@ -21,139 +19,131 @@
 
 <p align="center">
   <img src="docs/figures/demo.gif" width="760"
-       alt="仿真机械臂执行真实录制的示教轨迹，由真实关节数据驱动"/>
+       alt="录制的示教轨迹在仿真机械臂上回放"/>
 </p>
 
-*仿真。录制的示教轨迹在机械臂上回放；网格取自 URDF，位姿取自回放过程的 `/joint_states`。
+*录制的示教轨迹在仿真中回放：网格取自 URDF，位姿取自回放过程的 `/joint_states`。
 50 秒、100 Hz。*
 
-<p align="center">
-  <img src="docs/figures/hardware.gif" width="372" alt="实物演示 —— 待补视频"/>
-  &nbsp;
-  <img src="docs/figures/rviz2.gif" width="372" alt="RViz2 录屏 —— 待补"/>
-</p>
-
-*实物（左）与 RViz2（右）—— 见 [`docs/MEDIA.md`](docs/MEDIA.md)。*
-
-六个达妙电机加一个夹爪，挂在同一块 MCU 驱动板上，通过 `/dev/ttyACM0` 用「下行 50 字节 /
-上行 46 字节」的二进制协议通信。ROS 1 工程放在 [`reference/`](reference/)，`src/` 是 Jazzy
-移植版。
+机械臂为六个达妙电机加一个夹爪，挂在同一块 MCU 驱动板上，通过 `/dev/ttyACM0` 以「下行
+50 字节 / 上行 46 字节」的二进制协议通信。
 
 | | |
 |---|---|
-| **移植** | 5 个 catkin 包 → 7 个 ament 包 · 21 个可执行文件 |
-| **协议** | **7/7** 项通过，六关节精度 **< 0.002 rad** |
-| **链路** | 端到端 **6/6** 项通过，**100 Hz** |
-| **保持一致** | 增益与帧偏移未改；修正 3 处上游缺陷 |
-| **未验证** | 实机 · RealSense · 图形界面 —— 见[下文](#未验证的部分) |
+| **软件包** | `arm_control` · `hardware` · `deep_camera` · `aruco` · `miku_dummy` · `miku_dummy_moveit_config` · `miku_sim` |
+| **控制** | KDL 正逆解、直线插补、六通道重力补偿、四态夹爪状态机 |
+| **模式** | `mode=1` MIT（刚度、阻尼、力矩前馈） · `mode=2` 限速位置控制 |
+| **仿真** | 无需硬件：仿真电机 + 协议级虚拟驱动板 |
+| **来源** | 由 ROS 1 Noetic 工程移植，原始工作空间见 [`reference/`](reference/) |
 
-## 快速开始
+## 构建
+
+需要 Ubuntu 24.04 与 ROS 2 Jazzy。
 
 ```bash
 source /opt/ros/jazzy/setup.bash
-git clone https://github.com/p20030920p/miku-arm-ros2.git && cd miku-arm-ros2
+git clone https://github.com/p20030920p/miku-arm-ros2.git
+cd miku-arm-ros2
 colcon build --symlink-install
 source install/setup.bash
 ```
 
-**不需要硬件** —— 启动仿真机械臂，再把真实录制回放上去：
+## 使用硬件
+
+先启动模型显示与串口节点，再选择控制器：
 
 ```bash
-ros2 launch miku_sim sim.launch.py                    # 仿真电机 + RViz2
-ros2 run hardware trajectory_track                    # 提示输入 teach_path/ 下的文件名
+ros2 launch miku_dummy display.launch.py     # robot_state_publisher + RViz2
+ros2 run hardware hardware                   # 串口节点
 ```
-
-接实机时用的是同一批节点，只是把串口设备接上：
 
 ```bash
-ros2 launch miku_dummy display.launch.py              # robot_state_publisher + RViz2
-ros2 run hardware hardware                            # -p serial_port:=/dev/ttyACM0
-ros2 run arm_control teach_one_node                   # 重力补偿下手动示教
+# 键盘输入笛卡尔目标位姿
+ros2 run arm_control arm_control_node
+
+# 手动示教：仅重力补偿，kp = 0
+ros2 run arm_control teach_one_node
+
+# 复现 hardware/teach_path 下录制的轨迹
+ros2 run hardware trajectory_track
 ```
 
-三个 `./launch_*.sh` 脚本封装了以上流程，并在退出时自动归零。
+串口默认 `/dev/ttyACM0`、115200，可通过参数修改：
 
-## 两个替代品
+```bash
+ros2 run hardware hardware --ros-args -p serial_port:=/dev/ttyACM1
+```
 
-用两个替代品覆盖不同的层。
+`./launch_hardware.sh`、`./launch_arm_teach_one_node.sh`、`./launch_claw_test.sh`
+封装了上述流程，并在退出时自动归零。
 
-**`virtual_motor_board.py`** 实现驱动板一侧的协议：`0x86C1` / `0x86C2` 帧头、字段偏移、
-×1000 定点。经 `socat` 的 PTY 配对，用它测试串口协议 —— 被测对象是真实的 `hardware`
-二进制。
+## 无硬件仿真
 
-**`sim_motor_board`** 在 ROS 侧替换驱动板并发布 `/joint_states`，使控制回路在仿真中闭环。
+启动仿真机械臂，用同一批控制器节点驱动：
 
-![实机链路与仿真链路共用全部算法节点，只有电机接口不同](docs/figures/architecture.png)
+```bash
+ros2 launch miku_sim sim.launch.py           # 仿真电机 + RViz2
+ros2 run hardware trajectory_track           # 复现录制的轨迹
+```
+
+`miku_sim` 提供两个替代品，覆盖不同的层：
+
+- **`sim_motor_board`** 在 ROS 侧替换驱动板并发布 `/joint_states`，使控制回路在仿真中闭环。
+- **`virtual_motor_board.py`** 实现驱动板一侧的协议 —— `0x86C1` / `0x86C2` 帧头、字段偏移、
+  ×1000 定点。经 `socat` 的 PTY 配对，用它测试串口协议，被测对象是真实的 `hardware` 二进制。
+
+![两条路径运行同一批 arm_control 二进制，仅电机接口不同](docs/figures/architecture.png)
 
 控制器不经过 MoveIt 或 `ros2_control`，而是自己跑 KDL 运动学、以 MIT 模式下发电机指令。
 
 ## 验证
 
 ```bash
-ros2 run miku_sim run_serial_hil_test.sh    # 7 项
-ros2 run miku_sim run_sim_e2e_test.sh       # 6 项
+ros2 run miku_sim run_serial_hil_test.sh     # 串口协议，7 项
+ros2 run miku_sim run_sim_e2e_test.sh        # 控制链路，6 项
 ```
 
-`run_serial_hil_test.sh` —— 真实 `hardware` 二进制对虚拟驱动板：
-
-| 检查项 | 结果 |
+| 串口协议 | 结果 |
 |---|---|
-| 驱动板初始化、双向帧流 | ✅ |
-| 六关节定位精度 | **< 0.002 rad** |
-| MIT 力矩前馈符号与幅值 | ✅ |
-| 重力下垂被前馈消除 | ✅ |
-| 夹爪接触后卡住 | ✅ |
+| 驱动板初始化、双向帧流 | 通过 |
+| 六关节定位精度 | < 0.002 rad |
+| MIT 力矩前馈符号与幅值 | 通过 |
+| 重力下垂被前馈消除 | 通过 |
+| 夹爪接触后卡住 | 通过 |
 | 运行中拔掉驱动板 | 节点不退出 |
 
-`run_sim_e2e_test.sh` —— 整条链路在仿真中闭环：
-
-| 检查项 | 结果 |
+| 控制链路 | 结果 |
 |---|---|
-| `/joint_states` 频率 | **100 Hz** |
+| `/joint_states` 频率 | 100 Hz |
 | TF 树 `base_link → link_6` | 完整 |
-| IK 闭环使机械臂真的运动 | ✅ |
-| 重力补偿悬停漂移 | **0.0000 rad** |
-| 真实示教文件回放 | **7 325 点** |
-| 夹爪状态机到达「已夹到」 | ✅ |
+| IK 闭环使机械臂运动 | 通过 |
+| 重力补偿悬停漂移 | 0.0000 rad |
+| 复现录制的示教文件 | 7 325 点 |
+| 夹爪状态机到达「已夹到」 | 通过 |
 
-定位精度覆盖字节序、字段偏移与 ×1000 换算：任一处出错都会表现为固定偏差。
+各项断言内容与未覆盖范围见 [`docs/TESTING.md`](docs/TESTING.md)。
 
-### 未验证的部分
+## 软件包
 
-- **实机物理特性。** 协议与控制律已验证，刚度、摩擦与真实重力负载未验证。
-  `arm_control_params.yaml` 的增益沿用原标定值，未做验证。
-- **RealSense D435。** 无相机。`deep_camera` 与 `aruco` 用合成图像测试过
-  （750 mm 深度、标记 `ID=341`、位姿解算），未接触真实传感器数据。
-- **关节限位。** `KDL::ChainIkSolverPos_LMA` 不考虑限位，与上游一致。不可达目标打印
-  `IK 失败，本步跳过` 并跳过。
-- **图形界面交互。** 本机 Qt5 highgui 起不了 X 窗口，`deep_camera` 的鼠标取点与 ESC
-  退出路径未测试。
-
-## 目录结构
-
-```
-src/
-  arm_control/               KDL 正逆解、直线规划、重力补偿、夹爪状态机
-  hardware/                  串口节点、轨迹复现、示教录制、各测试节点
-  miku_sim/                  虚拟驱动板、仿真电机、两套自动化测试
-  miku_dummy/                URDF、meshes、RViz2 配置
-  miku_dummy_moveit_config/  MoveIt 2 配置（SRDF + 规划器参数）
-  aruco/                     检测器、ROS 2 节点、标记制作资料
-  deep_camera/               RealSense RGB-D 采集、位姿估计
-docs/                        PORTING.md、TESTING.md、OVERVIEW.md、MEDIA.md
-reference/ros1-original/     原始 ROS 1 工作空间，未改动（COLCON_IGNORE）
-tools/                       演示录制、配图生成、实物视频导入
-```
+| 包 | 内容 |
+|---|---|
+| `arm_control` | 运动学、重力补偿、直线规划、夹爪状态机、控制节点 |
+| `hardware` | 串口节点、轨迹复现、示教录制、测试节点 |
+| `miku_sim` | 仿真电机、虚拟驱动板、两套测试 |
+| `deep_camera` | RealSense RGB-D 采集与 ArUco 位姿估计 |
+| `aruco` | ArUco 检测器、ROS 2 节点、标记制作资料 |
+| `miku_dummy` | URDF、meshes、RViz2 配置 |
+| `miku_dummy_moveit_config` | MoveIt 2 配置（SRDF、规划器参数） |
 
 ## 文档
 
 | | |
 |---|---|
-| [`docs/OVERVIEW.md`](docs/OVERVIEW.md) | 为什么移植、机械臂做什么、两个替代品如何工作 |
-| [`docs/PORTING.md`](docs/PORTING.md) | ROS 1 → ROS 2 映射规则，以及每一处不适用之处 |
-| [`docs/TESTING.md`](docs/TESTING.md) | 每项断言检查什么、配图如何重新录制 |
-| [`docs/MEDIA.md`](docs/MEDIA.md) | 如何加入实物录像；两个预留位置 |
-| [`CHANGELOG.md`](CHANGELOG.md) | 含修正的三处上游缺陷 |
+| [`docs/OVERVIEW.md`](docs/OVERVIEW.md) | 控制链路、话题、仿真设计 |
+| [`docs/PORTING.md`](docs/PORTING.md) | ROS 1 → ROS 2 映射规则 |
+| [`docs/TESTING.md`](docs/TESTING.md) | 测试套件、覆盖范围与缺口 |
+| [`docs/RECORDING.md`](docs/RECORDING.md) | 录制演示 |
+| [`CHANGELOG.md`](CHANGELOG.md) | 版本记录 |
 
 ## 许可
 

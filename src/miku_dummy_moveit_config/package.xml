@@ -4,10 +4,7 @@
   <name>miku_dummy_moveit_config</name>
   <version>0.1.0</version>
   <description>
-    miku_arm 的 MoveIt 2 配置（由 ROS 1 的 misc/miku_dummy_moveit_config 移植）。
-    ROS 2 差异：MoveIt 1 的 20 多个 XML launch 与 ros_controllers.yaml 无法直接复用，
-    改为 MoveIt 2 的 moveit_configs_utils + Python launch；
-    SRDF 与各规划器 yaml 是跨版本通用的，原样保留。
+    MoveIt 2 configuration for the miku arm (SRDF, kinematics and planner parameters).
   </description>
 
   <maintainer email="1824896675@qq.com">lb86</maintainer>

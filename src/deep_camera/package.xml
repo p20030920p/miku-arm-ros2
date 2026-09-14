@@ -3,7 +3,9 @@
 <package format="3">
   <name>deep_camera</name>
   <version>0.0.0</version>
-  <description>视觉引导抓取节点 —— 基于 RealSense D435 深度相机（ROS 1 Noetic → ROS 2 Jazzy 移植）</description>
+  <description>
+    Visual grasping with a RealSense D435: RGB-D capture, ArUco pose estimation and grasp-point selection.
+  </description>
 
   <maintainer email="1824896675@qq.com">lb86</maintainer>
 

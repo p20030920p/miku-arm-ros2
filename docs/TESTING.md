@@ -102,27 +102,53 @@ Environment: `ROS_DOMAIN_ID` (default 72), same isolation as above.
 
 ## Regenerating the figures
 
-The README figures come from real runs, not from drawing code alone. `tools/make_hero.py`
-in particular needs captured data.
+The README figures come from real runs.
+
+`docs/figures/demo.gif` is rendered by `tools/record_demo.py`, which loads the URDF and STL meshes
+and poses them from recorded joint states. RViz2 cannot be recorded headlessly here: with no X
+server, Ogre fails to create a GLX window.
 
 ```bash
 # 1. start the simulated arm
 ros2 launch miku_sim sim.launch.py use_rviz:=false &
 
 # 2. capture joint states while a recorded teach path plays back
-python3 tools/capture_joint_states.py 22 /tmp/capture_traj.json &
+python3 tools/capture_joint_states.py 50 /tmp/capture.json &
 sleep 2
-NAME=$(basename "$(ls install/hardware/share/hardware/teach_path/*.txt | head -1)" .txt)
-printf '%s\n\n' "$NAME" | ros2 run hardware trajectory_track
+printf '2025-10-11_17-38-34\n\n' | ros2 run hardware trajectory_track
 
-# 3. rebuild the figures
-python3 tools/make_hero.py /tmp/capture_traj.json docs/figures/hero.png
-python3 tools/make_architecture.py
+# 3. render
+python3 tools/record_demo.py /tmp/capture.json --frames 85 --fps 15 \
+        --size 760x480 --outdir docs/figures
 ```
 
-`make_architecture.py` draws from the code, not from a run — if you rename a topic, update it there.
-`make_hero.py` panels C and D carry values measured by the HIL suite; if you change the simulator's
-model, re-measure them rather than leaving stale numbers in the figure.
+`docs/figures/architecture.png` is drawn from the code by `tools/make_architecture.py`, not from a
+run. After editing it, check the layout:
+
+```bash
+python3 tools/check_figure.py      # no text out of bounds, across borders, or overlapping
+```
+
+The canvas is fixed at 8.6 × 2.05 in on purpose: the README column is about 800 px wide, so a taller
+figure is scaled down until the labels are unreadable. The generator asserts its own width and
+height budget and fails rather than emitting a broken figure. Captions and panel data for the
+figures carry measured values; re-measure them if the simulator model changes.
+
+## Coverage
+
+Both suites run without hardware. Together they cover the serial protocol and the control pipeline.
+
+Not covered:
+
+- **The physical arm.** Protocol framing, field offsets, scaling and the control law are verified;
+  stiffness, friction and the actual gravity load are not. The gains in
+  `arm_control_params.yaml` carry over from the original tuning.
+- **The RealSense D435.** `deep_camera` and `aruco` are exercised with synthetic images
+  (750 mm depth, marker `ID=341`, pose solved), not with sensor data.
+- **Joint limits.** `KDL::ChainIkSolverPos_LMA` does not consider them, matching upstream.
+  Unreachable targets log `IK 失败，本步跳过` and are skipped.
+- **GUI interaction.** Qt5 highgui needs an X display; the mouse-pick and ESC paths in
+  `deep_camera` are not exercised by the suites.
 
 ## Adding a check
 

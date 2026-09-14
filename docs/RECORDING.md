@@ -1,16 +1,29 @@
-# Media
+# Recording demos
 
-Two places in the README are reserved for recordings that only exist on real hardware or on a
-machine with a working display. Until then they hold a neutral placeholder, so the page never shows
-a broken image and the layout never shifts.
+The README shows `figures/demo.gif`, which is rendered by `tools/record_demo.py` (see
+[`TESTING.md`](TESTING.md)). Footage of real hardware can be added alongside it.
 
-| Slot | File | What belongs there |
-|---|---|---|
-| Hardware demo | `figures/hardware.gif` | the real arm moving — a phone clip, or a screen capture of the run |
-| RViz2 recording | `figures/rviz2.gif` | RViz2 with the arm live, TF updating |
+To add one:
 
-Replace a slot by overwriting the file. Nothing else changes: both are referenced at a fixed
-`width="760"`, so the layout stays put and the placeholder stops being used.
+1. Convert the clip to a repository-sized GIF:
+
+   ```bash
+   python3 tools/make_figure_from_video.py <clip>.mp4 docs/figures/hardware.gif \
+           --start 10 --duration 8 --width 760 --fps 12
+   ```
+
+2. Add a centred image block to `README.md` under the existing demo figure:
+
+   ```html
+   <p align="center">
+     <img src="docs/figures/hardware.gif" width="760" alt="..."/>
+   </p>
+   ```
+
+Keep the file under about 3 MB; GitHub serves it as-is. If it is larger, in this order: shorten
+`--duration` to 6–8 s, reduce `--width` to 640, then lower `--fps` to 10 and `--colors` to 64.
+
+`docs/figures/demo.gif` is 1.2 MB with 85 frames at 760 × 480, which is a reasonable target.
 
 ---
 
@@ -73,8 +86,5 @@ If you would rather have nothing at all in a slot — no placeholder — delete 
 
 ## Regenerating the placeholders
 
-Only needed if you want a different size or wording; real media replaces them anyway.
-
-```bash
-python3 tools/make_placeholder.py
-```
+The placeholder files are committed at their final 760 × 480 size, so they only need replacing if
+the slot dimensions change.

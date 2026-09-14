@@ -3,7 +3,9 @@
 <package format="3">
   <name>arm_control</name>
   <version>0.1.0</version>
-  <description>机械臂控制算法封装（运动学 / 重力补偿 / 直线规划 / 夹爪状态机）—— ROS 2 Jazzy 移植版</description>
+  <description>
+    Control algorithms for the miku arm: KDL forward/inverse kinematics, six-channel gravity compensation, straight-line planning, and a gripper state machine.
+  </description>
 
   <maintainer email="lb86@todo.todo">lb86</maintainer>
   <license>MIT</license>

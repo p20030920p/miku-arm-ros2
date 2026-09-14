@@ -3,7 +3,9 @@
 <package format="3">
   <name>miku_dummy</name>
   <version>0.1.0</version>
-  <description>机械臂模型描述（URDF/meshes）+ RViz 显示 + Gazebo 仿真 —— ROS 2 Jazzy 移植版</description>
+  <description>
+    Robot model for the miku arm: URDF, meshes, RViz2 configuration and Gazebo launch files.
+  </description>
 
   <maintainer email="1824896675@qq.com">lb86</maintainer>
   <license>MIT</license>

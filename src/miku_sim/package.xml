@@ -4,12 +4,7 @@
   <name>miku_sim</name>
   <version>0.1.0</version>
   <description>
-    无实机仿真与测试：
-      1) virtual_motor_board —— 用真实的下位机串口协议（0x86C1/0x86C2、46/50 字节、
-         ×1000 定点）模拟达妙电机驱动板，配合 socat 虚拟串口即可在没有硬件的情况下
-         完整测试 hardware 节点的串口链路。
-      2) sim_motor_board —— 直接用 ArmMsg 闭环（不走串口），把 /joint_states 送到
-         Gazebo（gz_ros2_control），用于可视化与端到端验证。
+    Hardware-free simulation and tests: a protocol-level virtual motor board and a ROS-level motor model.
   </description>
 
   <maintainer email="1824896675@qq.com">lb86</maintainer>
