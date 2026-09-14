@@ -86,7 +86,6 @@ ros2 run arm_control teach_one_node                   # 重力补偿下手动示
 ![实机链路与仿真链路共用全部算法节点，只有电机接口不同](docs/figures/architecture.png)
 
 控制器不经过 MoveIt 或 `ros2_control`，而是自己跑 KDL 运动学、以 MIT 模式下发电机指令。
-因此两种路径只有电机接口不同。
 
 ## 验证
 

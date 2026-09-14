@@ -87,7 +87,7 @@ the control loop in simulation.
 ![The real and simulated paths share every algorithm node; only the motor interface differs](docs/figures/architecture.png)
 
 The controller does not use MoveIt or `ros2_control`; it runs its own KDL kinematics and commands
-the motors in MIT mode. Only the motor interface therefore differs between the two paths.
+the motors in MIT mode.
 
 ## Verification
 

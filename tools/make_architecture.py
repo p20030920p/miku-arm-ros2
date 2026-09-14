@@ -2,22 +2,23 @@
 """
 make_architecture.py —— 生成 docs/figures/architecture.png
 
-按 IEEE / RA-L 论文中系统框图的惯例绘制：
+布局思路（这是这张图反复改过的地方）：
+  旧版把 8 个同尺寸方框排在一条线上，没有任何主次，读者不知道从哪儿看起。
+  现在改成"一条主线 + 两个互斥分支"：
 
-  · 白底、无填充、细黑实线框；层次由线型与字重表达
-  · Times（Nimbus Roman）正文 + Helvetica（Nimbus Sans）标签 —— IEEE 字体搭配
-  · **扁平版面**：框内每行最多 2 行文字，细节搬进图题
-  · 先测量后布局：框宽高由实测文字决定，带越界断言
+      输入 ──▶ 控制器 ──┬──▶ (a) 实机
+                        └──▶ (b) 仿真
+                                 └──▶ 输出
 
-版面尺寸的理由（这是踩过坑的地方）：
-  README 正文栏宽约 800 px，图会被等比缩到该宽度显示。若图又高又窄
-  （如 6.6"×5.6"），8 pt 的字缩完后只剩约 9 px，必然看不清。
-  因此这里刻意做成 8.0"×3.3" 的扁幅（约 2.4:1）：
-      · 显示宽 800 px 时，8.2 pt 主名约 30 px 高 —— 清晰
-      · 框内一律单行副标题，框高统一，版面紧凑
-      · 协议常量（0x86C1、50 B/46 B、×1000）等细节移到图题，不挤在图里
+  · 控制器框画得略重（浅底、粗边）——它是唯一贯穿两条路径的环节，也是视觉焦点
+  · 两个分支框用同一支灰色，且只画一次"互斥"的连接，不做双向箭头堆叠
+  · 不在图内写解释性文字；能被框图表达的就不写成句子
 
-信号名与 src/ 下代码逐字一致。
+绘图规范：
+  · 白底无填充、细黑实线；Times（Nimbus Roman）+ Helvetica（Nimbus Sans）
+  · 框宽高由**实测文字**决定，位置由显式分列/分行推出，带越界断言
+  · 画布刻意做成 8.6"×3.2"（约 2.7:1），README 缩到 800 px 宽时 11 pt 主名
+    约 14 px，可读（旧版近正方形，缩完只剩 9 px）
 """
 
 import textwrap
@@ -25,16 +26,19 @@ import textwrap
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-from matplotlib.patches import FancyArrowPatch, Rectangle
+from matplotlib.patches import FancyArrowPatch, FancyBboxPatch
 
 SERIF, SANS = "Nimbus Roman", "Nimbus Sans"
 plt.rcParams.update({
     "font.family": SERIF, "font.size": 8, "figure.facecolor": "white",
     "axes.facecolor": "white", "text.color": "black", "savefig.facecolor": "white",
 })
-LW_BOX, LW_ARR, LW_FB = 1.0, 0.8, 0.65
-GREY = "0.30"
-FS_NAME, FS_SUB, FS_LAB, FS_HEAD, FS_CAP = 11.0, 9.2, 9.0, 10.5, 9.2
+FS_NAME, FS_SUB, FS_LAB, FS_CAP = 11.0, 9.0, 8.6, 9.0
+
+BLACK = "#000000"
+GREY = "#6b6b6b"
+FOCUS_FC = "#eef1f5"      # 控制器框的浅底，用于建立视觉焦点
+OPT_EC = "#444444"        # 分支框边色
 
 
 class Canvas:
@@ -62,132 +66,150 @@ class Canvas:
         t.remove()
         return h
 
-    # ---------------- 框 ----------------
-    def spec(self, name, sub=None, ns=FS_NAME, ss=FS_SUB):
+    def wrap(self, text, size, width_units):
+        """按给定宽度折行，避免副标题把框撑宽"""
+        lines, cur = [], ""
+        for wd in str(text).split():
+            trial = (cur + " " + wd).strip()
+            if self.tw(trial, size, SERIF, style="italic") <= width_units or not cur:
+                cur = trial
+            else:
+                lines.append(cur); cur = wd
+        if cur:
+            lines.append(cur)
+        return lines
+
+    def spec(self, name, sub=None, ns=FS_NAME, ss=FS_SUB, tag=None, wrap_at=24.0):
+        lines = self.wrap(sub, ss, wrap_at) if sub else []
         w = self.tw(name, ns)
-        if sub:
-            w = max(w, self.tw(sub, ss, SERIF, style="italic"))
-        w += 5.4
-        hn, hs = self.th(name, ns, SANS), self.th("Agq", ss, SERIF, style="italic")
-        h = hn + (hs * 1.45 + 1.6 if sub else 0.0) + 5.0
+        if tag:
+            w = max(w, self.tw(tag, FS_LAB, SANS))
+        for ln in lines:
+            w = max(w, self.tw(ln, ss, SERIF, style="italic"))
+        w += 5.2
+        hs = self.th("Agq", ss, SERIF, style="italic")
+        h = self.th(name, ns, SANS) + len(lines) * hs * 1.45 + 5.0
+        if tag:
+            h += self.th(tag, FS_LAB, SANS) * 1.6
         return w, h
 
-    def box(self, cx, cy, name, sub=None, min_w=0.0, ns=FS_NAME, ss=FS_SUB):
-        w, h = self.spec(name, sub, ns, ss)
+    def box(self, cx, cy, name, sub=None, fc="none", ec=BLACK, lw=1.1,
+            min_w=0.0, ns=FS_NAME, ss=FS_SUB, radius=1.4, tag=None,
+            wrap_at=24.0):
+        w, h = self.spec(name, sub, ns, ss, tag, wrap_at)
         w = max(w, min_w)
-        self.ax.add_patch(Rectangle((cx - w / 2, cy - h / 2), w, h, fill=False,
-                                    ec="black", lw=LW_BOX, zorder=3))
-        if sub:
-            y = cy + h / 2 - 2.4
-            self.ax.text(cx, y, name, ha="center", va="top", fontsize=ns,
-                         fontfamily=SANS, zorder=4)
-            self.ax.text(cx, y - self.th(name, ns, SANS) - 1.8, sub, ha="center",
-                         va="top", fontsize=ss, fontfamily=SERIF,
-                         fontstyle="italic", color=GREY, zorder=4)
-        else:
-            self.ax.text(cx, cy, name, ha="center", va="center", fontsize=ns,
-                         fontfamily=SANS, zorder=4)
+        self.ax.add_patch(FancyBboxPatch(
+            (cx - w / 2, cy - h / 2), w, h,
+            boxstyle=f"round,pad=0,rounding_size={radius}",
+            fc=fc, ec=ec, lw=lw, zorder=3))
+        # 自下而上排布：先放最后一行副标题，再往上叠。
+        # 之前用 va="top" 自上而下叠，文字会溢出框的下沿（检查器抓到过）。
+        hn = self.th(name, ns, SANS)
+        hs = self.th("Agq", ss, SERIF, style="italic")
+        lines = self.wrap(sub, ss, wrap_at) if sub else []
+        y = cy - h / 2 + 2.1                       # 底边内留白
+        for ln in reversed(lines):
+            self.ax.text(cx, y, ln, ha="center", va="bottom", fontsize=ss,
+                         fontfamily=SERIF, fontstyle="italic", color=GREY,
+                         zorder=4)
+            y += hs * 1.42
+        self.ax.text(cx, y, name, ha="center", va="bottom", fontsize=ns,
+                     fontfamily=SANS, zorder=4)
+        y += hn
+        if tag:
+            y += self.th(tag, FS_LAB, SANS) * 0.5
+            self.ax.text(cx, y, tag, ha="center", va="bottom", fontsize=FS_LAB,
+                         fontfamily=SANS, zorder=4, color="#333333")
         return dict(cx=cx, cy=cy, w=w, h=h, top=cy + h / 2, bot=cy - h / 2,
                     left=cx - w / 2, right=cx + w / 2)
 
-    # ---------------- 图元 ----------------
-    def arr(self, x1, y1, x2, y2, color="black", lw=LW_ARR, ms=6):
+    def arrow(self, x1, y1, x2, y2, color=BLACK, lw=1.1, ms=7):
         self.ax.add_patch(FancyArrowPatch((x1, y1), (x2, y2), arrowstyle="-|>",
                                           mutation_scale=ms, lw=lw, color=color,
                                           shrinkA=0, shrinkB=0, zorder=2))
 
-    def line(self, xs, ys, color=GREY, lw=LW_FB):
-        self.ax.plot(xs, ys, color=color, lw=lw, zorder=2)
+    def elbow(self, pts, color=BLACK, lw=1.1, arrow=True):
+        xs = [p[0] for p in pts]; ys = [p[1] for p in pts]
+        self.ax.plot(xs[:-1], ys[:-1], color=color, lw=lw, zorder=2,
+                     solid_capstyle="round")
+        if arrow:
+            self.arrow(xs[-2], ys[-2], xs[-1], ys[-1], color=color, lw=lw)
 
     def lab(self, x, y, s, size=FS_LAB, color=GREY, ha="center", va="center"):
         self.ax.text(x, y, s, fontsize=size, color=color, ha=ha, va=va,
                      fontfamily=SERIF, fontstyle="italic", zorder=5)
 
-    def head(self, x, y, s, size=FS_HEAD):
-        self.ax.text(x, y, s, fontsize=size, fontfamily=SANS, ha="center",
-                     va="center", zorder=5)
+    def chip(self, x, y, s, size=FS_LAB):
+        """分支名标签：小号无衬线 + 浅灰底，与框内文字区分"""
+        self.ax.text(x, y, s, fontsize=size, fontfamily=SANS, ha="left",
+                     va="center", zorder=5, color="#333333")
 
 
 # ==================================================================== 版面
-d = Canvas(8.6, 2.9)
+d = Canvas(8.6, 2.05)
+ax = d.ax
 
-CAM = ("deep_camera + aruco", "ArUco pose (solvePnP)")
+CAM = ("deep_camera + aruco", "marker pose")
 ALG = ("arm_control", "KDL FK/IK · planner · gravity · claw")
-REAL = ("hardware", "serial::Serial  ·  /dev/ttyACM0")
-SIM = ("sim_motor_board", "simulated motors  ·  no serial")
-VIS = ("robot_state_publisher \u2192 TF \u2192 RViz2", "/joint_states @ 100 Hz")
+REAL = ("hardware", "serial::Serial · /dev/ttyACM0")
+SIM = ("sim_motor_board", "simulated motors")
+OUT = ("robot_state_publisher\n→ TF → RViz2", "/joint_states @ 100 Hz")
 
-PAD_L, PAD_R, GPX, GPY = 12.5, 2.5, 5.0, 7.5   # 左边距须容纳 '/Arm_rx' 整串
-specs = {k: d.spec(n, s) for k, (n, s) in
-         dict(CAM=CAM, ALG=ALG, REAL=REAL, SIM=SIM, VIS=VIS).items()}
+MARGIN_L, MARGIN_R = 4.0, 4.0
+COL_GAP = 8.0
+ROW_GAP = 6.5
 
-# 横向：三个位置 —— 左（感知+规划）、中（两支路）、右（发布）
-left_w = max(specs["CAM"][0], specs["ALG"][0])
-mid_w = max(specs["REAL"][0], specs["SIM"][0])
-right_w = min(specs["VIS"][0], 23.0)   # 限宽，保证总和留有余量
+cam_s = d.spec(*CAM)
+alg_s = d.spec(*ALG)
+col1_w = max(cam_s[0], alg_s[0])
+col2_w = max(d.spec(*REAL, tag="(a)  real hardware")[0],
+             d.spec(*SIM, tag="(b)  simulation")[0])
+col3_w = d.spec(*OUT)[0]
 
-C1 = PAD_L + left_w / 2
-mid_l = PAD_L + left_w + GPX
-C2 = mid_l + mid_w / 2
-right_l = mid_l + mid_w + GPX
-C3 = right_l + right_w / 2
-span_r = C3 + right_w / 2
-assert span_r <= 100 - PAD_R, f"横向超宽：{span_r:.1f} > {100-PAD_R}"
+span = col1_w + COL_GAP + col2_w + COL_GAP + col3_w
+print(f"横向：col1={col1_w:.1f} col2={col2_w:.1f} col3={col3_w:.1f} 合计={span:.1f}/92")
+assert span <= 100 - MARGIN_L - MARGIN_R, f"横向超宽 {span:.1f}"
 
-# 纵向：三行
-row_h = max(specs[k][1] for k in specs)
-CAP_BAND = 11.0
-top = 96.0
-y1 = top - row_h / 2                     # 第 1 行：感知 / 规划 / 发布
-y2 = y1 - row_h / 2 - GPY - row_h / 2    # 第 2 行：真实硬件
-y3 = y2 - row_h / 2 - GPY - row_h / 2    # 第 3 行：仿真
-assert y3 - row_h / 2 >= CAP_BAND, f"纵向不足：底部 {y3-row_h/2:.1f}"
+x1 = MARGIN_L + col1_w / 2
+x2 = MARGIN_L + col1_w + COL_GAP + col2_w / 2
+x3 = MARGIN_L + col1_w + COL_GAP + col2_w + COL_GAP + col3_w / 2
+
+CAP_BAND = 13.0
+TOP = 96.0
+row_h = max(cam_s[1], alg_s[1],
+            d.spec(*REAL, tag="(a)  real hardware")[1],
+            d.spec(*SIM, tag="(b)  simulation")[1])
+y_top = TOP - row_h / 2
+y_bot = y_top - row_h - ROW_GAP
+assert y_bot - row_h / 2 >= CAP_BAND, f"纵向不足：底部 {y_bot-row_h/2:.1f} < {CAP_BAND}"
 
 # ==================================================================== 绘制
-cam = d.box(C1, y1, *CAM)
-alg = d.box(C1, y2, *ALG, min_w=left_w)
-vis = d.box(C3, y1, *VIS, min_w=right_w)
-real = d.box(C2, y2, *REAL, min_w=mid_w)
-sim = d.box(C2, y3, *SIM, min_w=mid_w)
+cam = d.box(x1, y_top, *CAM)
+alg = d.box(x1, y_bot, *ALG, fc=FOCUS_FC, ec=BLACK, lw=1.9, min_w=col1_w)
+real = d.box(x2, y_top, *REAL, ec=OPT_EC, tag="(a)  real hardware")
+sim = d.box(x2, y_bot, *SIM, ec=OPT_EC, tag="(b)  simulation")
+out = d.box(x3, (y_top + y_bot) / 2, *OUT, ec=OPT_EC, min_w=col3_w)
 
-d.head(C2, (y2 + y3) / 2 + row_h / 2 + GPY * 0.45, "")   # 占位，保持对称
-d.ax.text(real["cx"], real["top"] + GPY * 0.42, "(a)  Real hardware",
-          fontsize=FS_HEAD, fontfamily=SANS, ha="center", va="center", zorder=5)
-d.ax.text(sim["cx"], sim["bot"] - GPY * 0.42, "(b)  Simulation \u2014 no hardware",
-          fontsize=FS_HEAD, fontfamily=SANS, ha="center", va="center", zorder=5)
+# 分支名（贴在各自框左上，避免与连线争位置）
+# ---------------- 连线 ----------------
+d.arrow(cam["cx"] + 5.0, cam["bot"], alg["cx"] + 5.0, alg["top"])
 
-# 感知 -> 规划
-d.arr(cam["cx"], cam["bot"], alg["cx"], alg["top"])
-
-# 规划 -> 两支路
-# 两条 Arm_tx 分别标注在各自箭头的上/下侧，避免两个标签落在同一点
-d.arr(alg["right"], alg["cy"], real["left"] - 0.6, real["cy"])
-d.arr(alg["right"], alg["cy"] - 3.4, sim["left"] - 0.6, sim["cy"])
-d.lab((alg["right"] + real["left"]) / 2, real["cy"] + 3.0, "Arm_tx")
-d.lab((alg["right"] + sim["left"]) / 2, sim["cy"] - 3.4, "Arm_tx")
-
-# 回读：两条支路自右侧绕回规划（左列外侧）
-fb_x = alg["left"] - GPX * 0.55
-for b in (real, sim):
-    d.line([b["left"], fb_x], [b["cy"], b["cy"]])
-    d.lab(fb_x - 0.8, b["cy"] + 2.6, "/Arm_rx", ha="right")
-d.line([fb_x, fb_x], [real["cy"], sim["cy"]])
-d.arr(fb_x, alg["cy"], alg["left"] - 0.4, alg["cy"])
-
-# 仿真支路 -> 状态发布
-sim_r = sim["right"]
-d.line([sim_r, sim_r + (right_l - sim_r) * 0.45], [sim["cy"], sim["cy"]])
-d.arr(sim_r + (right_l - sim_r) * 0.45, sim["cy"], vis["left"] - 0.5, vis["cy"] - 2.0)
-d.lab(sim_r + 3.2, sim["cy"] + 4.2, "/joint_states", ha="left")
+# 控制器 -> 两个分支：共用一段竖线再分叉
+fork_x = (alg["right"] + real["left"]) / 2
+d.elbow([(alg["right"], alg["cy"]), (fork_x, alg["cy"]),
+         (fork_x, real["cy"]), (real["left"], real["cy"])])
+d.elbow([(fork_x, alg["cy"]), (fork_x, sim["cy"]), (sim["left"], sim["cy"])])
+# 仿真分支 -> 输出
+d.elbow([(sim["right"], sim["cy"]), (x3, sim["cy"]), (x3, out["bot"])])
+d.lab((sim["right"] + x3) / 2, sim["cy"] - 3.2, "/joint_states", size=7.6)
 
 # ==================================================================== 图题
 lead = "Fig. 1."
-body = ("Implemented message bus. Both conditions run the same arm_control binaries; only the "
-        "motor interface differs. The simulated branch reproduces the real board's 50 B / 46 B "
-        "framing byte for byte over a socat PTY, so the hardware binary runs against it unmodified.")
-cy = 2.2
-x_off = 0.8 + d.tw(lead + "  ", FS_CAP, SERIF, weight="bold")
-# 逐行绘制：首行从左边线起（"Fig. 1." 占位），续行缩进到正文起点 —— IEEE 的悬挂缩进
+body = ("Both branches run the same arm_control binaries; only the motor interface differs. The "
+        "simulated branch reproduces the board's 50 B / 46 B framing over a socat PTY, so the "
+        "hardware binary runs against it unmodified.")
+cy = 2.6
+x_off = 1.0 + d.tw(lead + "  ", FS_CAP, SERIF, weight="bold")
 avail = 99.0 - x_off
 words, lines, cur = body.split(), [], ""
 for wd in words:
@@ -198,17 +220,13 @@ for wd in words:
         lines.append(cur); cur = wd
 if cur:
     lines.append(cur)
-lh = d.th("Agq", FS_CAP, SERIF) * 1.55
+lh = d.th("Agq", FS_CAP, SERIF) * 1.5
 n = len(lines)
-# lines[0] 是首行，应位于**最上方**：y 随行号递减。
-# 首行从左边线开始（"Fig. 1." 占位），续行缩进到正文起点。
 for i, ln in enumerate(lines):
-    y = cy + (n - 1 - i) * lh
-    d.ax.text(x_off, y, ln, ha="left", va="bottom",
+    d.ax.text(x_off, cy + (n - 1 - i) * lh, ln, ha="left", va="bottom",
               fontsize=FS_CAP, fontfamily=SERIF)
-d.ax.text(0.8, cy + (n - 1) * lh, lead, ha="left", va="bottom",
-          fontsize=FS_CAP, fontfamily=SERIF, fontweight="bold")
+d.ax.text(1.0, cy + (n - 1) * lh, lead, ha="left", va="bottom", fontsize=FS_CAP,
+          fontfamily=SERIF, fontweight="bold")
 
 d.fig.savefig("docs/figures/architecture.png", dpi=300)
-print(f"wrote docs/figures/architecture.png  "
-      f"预算：横 {span_r:.1f}/98u，底 {y3-row_h/2:.1f}/{CAP_BAND}u")
+print("wrote docs/figures/architecture.png")
