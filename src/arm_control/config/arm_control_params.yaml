@@ -1,0 +1,54 @@
+# ============================================================================
+# arm_control_params.yaml —— ROS 2 Jazzy 参数文件
+#
+# ROS 1 → ROS 2 差异：
+#   原工程用 `rosparam load src/arm_control/config/arm_control.yaml` 把参数
+#   灌到全局参数服务器，节点用 nh.getParam("gravity_gains") 读取。
+#   ROS 2 没有全局参数服务器，改为"节点参数"，参数文件顶层写节点名，
+#   `/**` 表示对所有节点生效（这里正好让 arm_control_node / teach_one_node /
+#   claw_arm_test 共用同一份重力补偿与夹爪参数，等价于原来的全局参数）。
+#
+# 用法：
+#   ros2 run arm_control arm_control_node --ros-args \
+#       --params-file $(ros2 pkg prefix arm_control)/share/arm_control/config/arm_control_params.yaml
+#
+# 注意：ROS 2 的参数文件不允许用 `a.b: value` 这种扁平写法覆盖嵌套字典里
+#       没有声明过的项，所以节点的参数名（gravity_gains、claw.* 等）必须
+#       与节点里 declare_parameter 的名字完全一致。
+# ============================================================================
+
+/**:
+  ros__parameters:
+    # ===== 重力补偿（之前手工调的那 6 个系数，以后只改这里）=====
+    gravity_gains: [0.5, 0.55, 0.61, 0.6, 0.7, 0.3]
+
+    # ===== 控制参数 =====
+    control:
+      kp: 6.0
+      kd: 0.6
+      target_speed: 0.005   # 直线运动速度 m/s
+
+    # ===== 夹爪（电机7）控制参数 =====
+    # 单位：角度用"度"，代码内部自动转弧度
+    claw:
+      # 张开（CLAW_OPEN）
+      open_pos_deg: -5.0      # 张开到位目标角 (°)
+      open_step_deg: 1.5      # 张开步进 (°/帧)
+      open_torque: 0.8        # 张开驱动力矩 (N·m)
+
+      # 夹紧（CLAW_CLOSING）
+      close_pos_deg: -165.0   # 闭合到位目标角 (°)
+      close_step_deg: 0.5     # 夹紧步进 (°/帧)
+      close_torque: -0.8      # 夹紧驱动力矩 (N·m)
+
+      # 保持 / 夹到检测（CLAW_HOLD）
+      hold_step_deg: 14.5     # 预压量 (°)
+      hold_torque: -1.2       # 保持力矩 (N·m)
+      catch_torque: 0.5       # 夹到判定阈值 (N·m)
+
+# ============================================================================
+# 说明：原 arm_control.yaml 里的 urdf 段（package/file/base_link/tip_link）
+#       在 ROS 1 版本里其实没有被任何节点读取——三个节点都是硬编码
+#       "base_link" → "link_6" 与 urdf/miku_dummy.urdf。这里保持一致，
+#       不新增参数，以免造成"改了却不生效"的误解。
+# ============================================================================

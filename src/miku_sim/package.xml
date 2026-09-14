@@ -1,0 +1,40 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>miku_sim</name>
+  <version>0.1.0</version>
+  <description>
+    无实机仿真与测试：
+      1) virtual_motor_board —— 用真实的下位机串口协议（0x86C1/0x86C2、46/50 字节、
+         ×1000 定点）模拟达妙电机驱动板，配合 socat 虚拟串口即可在没有硬件的情况下
+         完整测试 hardware 节点的串口链路。
+      2) sim_motor_board —— 直接用 ArmMsg 闭环（不走串口），把 /joint_states 送到
+         Gazebo（gz_ros2_control），用于可视化与端到端验证。
+  </description>
+
+  <maintainer email="1824896675@qq.com">lb86</maintainer>
+  <license>MIT</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <depend>rclcpp</depend>
+  <depend>sensor_msgs</depend>
+  <depend>std_msgs</depend>
+  <depend>trajectory_msgs</depend>
+  <depend>arm_control</depend>
+
+  <exec_depend>robot_state_publisher</exec_depend>
+  <exec_depend>joint_state_publisher</exec_depend>
+  <exec_depend>gz_ros2_control</exec_depend>
+  <exec_depend>controller_manager</exec_depend>
+  <exec_depend>ros_gz_sim</exec_depend>
+  <exec_depend>ros_gz_bridge</exec_depend>
+  <exec_depend>topic_tools</exec_depend>
+  <exec_depend>launch</exec_depend>
+  <exec_depend>launch_ros</exec_depend>
+  <exec_depend>python3</exec_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

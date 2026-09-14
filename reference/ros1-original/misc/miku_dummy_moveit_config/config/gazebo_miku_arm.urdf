@@ -1,0 +1,276 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- This URDF was automatically created by SolidWorks to URDF Exporter! Originally created by Stephen Brawner (brawner@gmail.com) 
+     Commit Version: 1.6.0-4-g7f85cfe  Build Version: 1.6.7995.38578
+     For more information, please see http://wiki.ros.org/sw_urdf_exporter -->
+<robot name="miku_arm">
+    <link name="base_link">
+        <inertial>
+            <origin xyz="0.010645 -0.010486 1.5689E-05" rpy="0 0 0" />
+            <mass value="0.00001" />
+            <inertia ixx="10" ixy="0" ixz="0" iyy="0" iyz="0" izz="10" />
+        </inertial>
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <mesh filename="package://miku_arm/meshes/base_link.STL" />
+            </geometry>
+            <material name="">
+                <color rgba="1 1 1 1" />
+            </material>
+        </visual>
+        <collision>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <mesh filename="package://miku_arm/meshes/base_link.STL" />
+            </geometry>
+        </collision>
+    </link>
+    <link name="world" />
+    <joint name="world_joint" type="fixed">
+        <origin xyz="0 0 0.05" rpy="0 0 0" />
+        <!-- Place the robot wherever you want -->
+        <parent link="world" />
+        <child link="base_link" />
+        <!-- replace this name with your robot's base link -->
+    </joint>
+    <link name="link_1">
+        <inertial>
+            <origin xyz="0.010197 0.067289 0.00068246" rpy="0 0 0" />
+            <mass value="0.00001" />
+            <inertia ixx="10" ixy="0" ixz="0" iyy="0" iyz="0" izz="10" />
+        </inertial>
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <mesh filename="package://miku_arm/meshes/link_1.STL" />
+            </geometry>
+            <material name="">
+                <color rgba="1 1 1 1" />
+            </material>
+        </visual>
+        <collision>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <mesh filename="package://miku_arm/meshes/link_1.STL" />
+            </geometry>
+        </collision>
+    </link>
+    <joint name="joint_1" type="revolute">
+        <origin xyz="0.011371 -3.9704E-05 0.025603" rpy="1.5507 0.00054808 -1.5767" />
+        <parent link="base_link" />
+        <child link="link_1" />
+        <axis xyz="0 1 0" />
+        <limit lower="-2.3562" upper="2.3562" effort="100" velocity="2" />
+    </joint>
+    <link name="link_2">
+        <inertial>
+            <origin xyz="0.11068 0.034869 1.069E-08" rpy="0 0 0" />
+            <mass value="0.00001" />
+            <inertia ixx="10" ixy="0" ixz="0" iyy="0" iyz="0" izz="10" />
+        </inertial>
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <mesh filename="package://miku_arm/meshes/link_2.STL" />
+            </geometry>
+            <material name="">
+                <color rgba="1 1 1 1" />
+            </material>
+        </visual>
+        <collision>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <mesh filename="package://miku_arm/meshes/link_2.STL" />
+            </geometry>
+        </collision>
+    </link>
+    <joint name="joint_2" type="revolute">
+        <origin xyz="0 0.08788 0" rpy="0 0 1.5708" />
+        <parent link="link_1" />
+        <child link="link_2" />
+        <axis xyz="0 1 0" />
+        <limit lower="-1.5708" upper="1.5708" effort="100" velocity="2" />
+    </joint>
+    <link name="link_3">
+        <inertial>
+            <origin xyz="0.110053650868383 0.0335164692750554 1.94705920449068E-08" rpy="0 0 0" />
+            <mass value="0.00001" />
+            <inertia ixx="10" ixy="0" ixz="0" iyy="0" iyz="0" izz="10" />
+        </inertial>
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <mesh filename="package://miku_arm/meshes/link_3.STL" />
+            </geometry>
+            <material name="">
+                <color rgba="1 1 1 1" />
+            </material>
+        </visual>
+        <collision>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <mesh filename="package://miku_arm/meshes/link_3.STL" />
+            </geometry>
+        </collision>
+    </link>
+    <joint name="joint_3" type="revolute">
+        <origin xyz="0.184 0 0" rpy="3.1416 0 0" />
+        <parent link="link_2" />
+        <child link="link_3" />
+        <axis xyz="0 1 0" />
+        <limit lower="-1.5708" upper="1.5708" effort="100" velocity="2" />
+    </joint>
+    <link name="link_4">
+        <inertial>
+            <origin xyz="0.049628 -0.0075971 0.0074952" rpy="0 0 0" />
+            <mass value="0.00001" />
+            <inertia ixx="10" ixy="0" ixz="0" iyy="0" iyz="0" izz="10" />
+        </inertial>
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <mesh filename="package://miku_arm/meshes/link_4.STL" />
+            </geometry>
+            <material name="">
+                <color rgba="1 1 1 1" />
+            </material>
+        </visual>
+        <collision>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <mesh filename="package://miku_arm/meshes/link_4.STL" />
+            </geometry>
+        </collision>
+    </link>
+    <joint name="joint_4" type="revolute">
+        <origin xyz="0.184 0 0" rpy="1.5708 0 0" />
+        <parent link="link_3" />
+        <child link="link_4" />
+        <axis xyz="0 0 1" />
+        <limit lower="-1.5708" upper="1.5708" effort="100" velocity="2" />
+    </joint>
+    <link name="link_5">
+        <inertial>
+            <origin xyz="-0.0603 -0.014918 -1.3904E-09" rpy="0 0 0" />
+            <mass value="0.00001" />
+            <inertia ixx="10" ixy="0" ixz="0" iyy="0" iyz="0" izz="10" />
+        </inertial>
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <mesh filename="package://miku_arm/meshes/link_5.STL" />
+            </geometry>
+            <material name="">
+                <color rgba="1 1 1 1" />
+            </material>
+        </visual>
+        <collision>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <mesh filename="package://miku_arm/meshes/link_5.STL" />
+            </geometry>
+        </collision>
+    </link>
+    <joint name="joint_5" type="revolute">
+        <origin xyz="0.0815 0 0.0025" rpy="0 0 -3.1416" />
+        <parent link="link_4" />
+        <child link="link_5" />
+        <axis xyz="0 -1 0" />
+        <limit lower="-1.5708" upper="1.5708" effort="100" velocity="2" />
+    </joint>
+    <link name="link_6">
+        <inertial>
+            <origin xyz="-1.5722E-10 0.016911 -1.5926E-10" rpy="0 0 0" />
+            <mass value="0.00001" />
+            <inertia ixx="10" ixy="0" ixz="0" iyy="0" iyz="0" izz="10" />
+        </inertial>
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <mesh filename="package://miku_arm/meshes/link_6.STL" />
+            </geometry>
+            <material name="">
+                <color rgba="1 1 1 1" />
+            </material>
+        </visual>
+        <collision>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <mesh filename="package://miku_arm/meshes/link_6.STL" />
+            </geometry>
+        </collision>
+    </link>
+    <joint name="joint_6" type="revolute">
+        <origin xyz="-0.10372 -0.0105 0" rpy="-3.1416 0.11723 -1.5708" />
+        <parent link="link_5" />
+        <child link="link_6" />
+        <axis xyz="0 1 0" />
+        <limit lower="-2.3562" upper="2.3562" effort="100" velocity="2" />
+    </joint>
+    <transmission name="trans_joint_1">
+        <type>transmission_interface/SimpleTransmission</type>
+        <joint name="joint_1">
+            <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+        </joint>
+        <actuator name="joint_1_motor">
+            <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+            <mechanicalReduction>1</mechanicalReduction>
+        </actuator>
+    </transmission>
+    <transmission name="trans_joint_2">
+        <type>transmission_interface/SimpleTransmission</type>
+        <joint name="joint_2">
+            <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+        </joint>
+        <actuator name="joint_2_motor">
+            <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+            <mechanicalReduction>1</mechanicalReduction>
+        </actuator>
+    </transmission>
+    <transmission name="trans_joint_3">
+        <type>transmission_interface/SimpleTransmission</type>
+        <joint name="joint_3">
+            <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+        </joint>
+        <actuator name="joint_3_motor">
+            <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+            <mechanicalReduction>1</mechanicalReduction>
+        </actuator>
+    </transmission>
+    <transmission name="trans_joint_4">
+        <type>transmission_interface/SimpleTransmission</type>
+        <joint name="joint_4">
+            <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+        </joint>
+        <actuator name="joint_4_motor">
+            <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+            <mechanicalReduction>1</mechanicalReduction>
+        </actuator>
+    </transmission>
+    <transmission name="trans_joint_5">
+        <type>transmission_interface/SimpleTransmission</type>
+        <joint name="joint_5">
+            <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+        </joint>
+        <actuator name="joint_5_motor">
+            <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+            <mechanicalReduction>1</mechanicalReduction>
+        </actuator>
+    </transmission>
+    <transmission name="trans_joint_6">
+        <type>transmission_interface/SimpleTransmission</type>
+        <joint name="joint_6">
+            <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+        </joint>
+        <actuator name="joint_6_motor">
+            <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+            <mechanicalReduction>1</mechanicalReduction>
+        </actuator>
+    </transmission>
+    <gazebo>
+        <plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so">
+            <robotNamespace>/</robotNamespace>
+        </plugin>
+    </gazebo>
+</robot>
+

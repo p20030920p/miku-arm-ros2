@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+	<name>aruco</name>
+	<version>1.1.0</version>
+	<description>The aruco package can be used to detect, track and calculate pose from aruco markers.</description>
+	<maintainer email="tentone@outlook.com">tentone</maintainer>
+	<license>MIT</license>
+
+	<!-- ROS 2 差异：catkin -> ament_cmake，message_generation -> rosidl_default_generators -->
+	<buildtool_depend>ament_cmake</buildtool_depend>
+	<buildtool_depend>rosidl_default_generators</buildtool_depend>
+
+	<depend>rclcpp</depend>
+	<depend>std_msgs</depend>
+	<depend>sensor_msgs</depend>
+	<!-- ROS 2 差异：节点还发布 geometry_msgs/Point、PoseStamped 与 nav_msgs/Odometry -->
+	<depend>geometry_msgs</depend>
+	<depend>nav_msgs</depend>
+	<depend>cv_bridge</depend>
+	<!-- ROS 2 差异：OpenCV 通过 rosdep key libopencv-dev 提供（OpenCV 4.6） -->
+	<depend>libopencv-dev</depend>
+
+	<!-- ROS 2 差异：图像订阅不再使用 image_transport（Jazzy 中 ImageTransport 经典 API 已弃用），
+	     改为直接 rclcpp 订阅 sensor_msgs/msg/Image + cv_bridge 转换，故不再依赖 image_transport -->
+
+	<exec_depend>rosidl_default_runtime</exec_depend>
+	<exec_depend>launch</exec_depend>
+	<exec_depend>launch_ros</exec_depend>
+
+	<member_of_group>rosidl_interface_packages</member_of_group>
+
+	<export>
+		<build_type>ament_cmake</build_type>
+	</export>
+</package>

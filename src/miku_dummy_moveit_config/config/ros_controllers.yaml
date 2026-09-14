@@ -1,0 +1,43 @@
+# 发布关节状态（新增）
+joint_state_controller:
+  type: joint_state_controller/JointStateController
+  publish_rate: 50  # 50Hz的发布频率
+
+# 配置机械臂的轨迹控制器（已修改）
+manipulator_controller:
+  type: effort_controllers/JointTrajectoryController
+  joints:
+    - joint_1
+    - joint_2
+    - joint_3
+    - joint_4
+    - joint_5
+    - joint_6
+  
+  # 增益参数已按教程格式优化（根据您的机器人调整这些值）
+  gains:
+    joint_1: { p: 15000, d: 50, i: 0.01 }
+    joint_2: { p: 15000, d: 50, i: 0.01 }
+    joint_3: { p: 15000, d: 50, i: 0.01 }
+    joint_4: { p: 15000, d: 50, i: 0.01 }
+    joint_5: { p: 10000, d: 50, i: 0.01 }
+    joint_6: { p: 5000, d: 50, i: 0.01 }
+  
+  # 新增配置项（来自教程）
+  state_publish_rate: 25  # 25Hz状态发布
+  constraints:
+    goal_time: 2.0  # 2秒到达目标
+
+# 声明MoveIt可用的控制器（新增关键部分）
+controller_list:
+  - name: manipulator_controller
+    action_ns: follow_joint_trajectory
+    type: FollowJointTrajectory
+    default: true
+    joints:
+      - joint_1
+      - joint_2
+      - joint_3
+      - joint_4
+      - joint_5
+      - joint_6

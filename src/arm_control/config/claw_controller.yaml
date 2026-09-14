@@ -1,0 +1,17 @@
+# ===== 夹爪（电机7）控制参数 =====
+# 单位：角度用"度"，代码内部自动转弧度
+claw:
+  # 张开（CLAW_OPEN）
+  open_pos_deg: -5.0      # 张开到位目标角 (°)
+  open_step_deg: 1.5      # 张开步进 (°/帧)
+  open_torque: 0.8        # 张开驱动力矩 (N·m)
+
+  # 夹紧（CLAW_CLOSING）
+  close_pos_deg: -165.0   # 闭合到位目标角 (°)
+  close_step_deg: 0.5     # 夹紧步进 (°/帧)
+  close_torque: -0.8      # 夹紧驱动力矩 (N·m)
+
+  # 保持 / 夹到检测（CLAW_HOLD）
+  hold_step_deg: 14.5     # 预压量 (°)
+  hold_torque: -1.2       # 保持力矩 (N·m)
+  catch_torque: 0.5       # 夹到判定阈值 (N·m)

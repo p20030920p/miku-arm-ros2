@@ -1,0 +1,7 @@
+build/
+devel/
+.vscode/
+*.log
+**/export.log
+src/arm_control/teach_path/
+src/hardware/teach_path/

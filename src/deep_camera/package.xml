@@ -1,0 +1,46 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>deep_camera</name>
+  <version>0.0.0</version>
+  <description>视觉引导抓取节点 —— 基于 RealSense D435 深度相机（ROS 1 Noetic → ROS 2 Jazzy 移植）</description>
+
+  <maintainer email="1824896675@qq.com">lb86</maintainer>
+
+  <license>MIT</license>
+
+  <!-- ROS 2 差异：catkin → ament_cmake -->
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <!-- ROS 2 差异：roscpp/rospy → rclcpp（本包只有 C++ 节点） -->
+  <depend>rclcpp</depend>
+  <depend>std_msgs</depend>
+  <depend>sensor_msgs</depend>
+  <depend>cv_bridge</depend>
+  <depend>message_filters</depend>
+
+  <!-- 系统依赖：OpenCV（Ubuntu 24.04 的 libopencv-dev，4.6） -->
+  <depend>libopencv-dev</depend>
+
+  <!--
+    aruco：本包与 aruco 是 **C++ 源码级**依赖（不是 ROS 话题依赖）——
+    两个节点直接调用 ArucoDetector::getMarkers() / ArucoMarker 的 C++ API，
+    不订阅任何 aruco 话题，因此这里**没有** <depend>aruco</depend>：
+
+    · ROS 1 的写法是 find_package(catkin COMPONENTS aruco) +
+      include_directories(.../aruco/src) + #include "ArucoDetector.cpp"。
+    · ROS 2 的 aruco 包由另一路任务并行移植，当前**尚未导出可链接的库**。
+      本包改用缓存变量 ARUCO_SRC_DIR（默认 ../aruco/src）直接把 aruco 的
+      库源码编入自己的可执行文件（详见 CMakeLists.txt 顶部说明），
+      既不需要 aruco 先构建，也避免重复符号风险。
+    · 若在这里写 <depend>aruco</depend>，colcon 会强制要求 aruco 已经构建
+      （缺少 install/aruco/share/aruco/package.sh 就会直接报错），
+      本包将无法独立构建。
+    · 将来若改用 -DDEEP_CAMERA_LINK_ARUCO_PACKAGE=ON 链接 aruco 导出的库，
+      请同时在此处加回 <depend>aruco</depend>（并保证 aruco 先构建）。
+  -->
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

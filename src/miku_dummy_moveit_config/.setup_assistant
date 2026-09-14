@@ -1,0 +1,11 @@
+moveit_setup_assistant_config:
+  URDF:
+    package: miku_arm
+    relative_path: urdf/miku_arm.urdf
+    xacro_args: ""
+  SRDF:
+    relative_path: config/miku_arm.srdf
+  CONFIG:
+    author_name: LB86
+    author_email: 1824896675@qq.com
+    generated_timestamp: 1759918788

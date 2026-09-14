@@ -1,0 +1,18 @@
+# ===== 重力补偿（之前手工调的那 6 个系数，以后只改这里）=====
+gravity_gains: [0.5, 0.55, 0.61, 0.6, 0.7, 0.3]
+
+# ===== 控制参数 =====
+control:
+  kp: 6.0
+  kd: 0.6
+  target_speed: 0.005   # 直线运动速度 m/s
+
+# ===== 模型（换 URDF 也只改这里）=====
+urdf:
+  package: arm_control
+  file: urdf/miku_dummy.urdf
+  base_link: base_link
+  tip_link: link_6
+
+# ===== 关节名 =====
+joint_names: ["joint_1","joint_2","joint_3","joint_4","joint_5","joint_6"]
