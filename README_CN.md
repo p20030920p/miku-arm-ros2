@@ -19,10 +19,22 @@
 
 </div>
 
-![仿真机械臂执行真实录制的示教轨迹 —— URDF 网格由真实关节数据驱动](docs/figures/demo.gif)
+<p align="center">
+  <img src="docs/figures/demo.gif" width="760"
+       alt="仿真机械臂执行真实录制的示教轨迹，由真实关节数据驱动"/>
+</p>
 
-*真实录制的示教轨迹在机械臂上回放。网格是机器人自己的 URDF，位姿来自回放过程中真实的
-`/joint_states` —— 50 秒、100 Hz、六个关节全部在动。没有任何一帧是手工摆出来的。*
+*仿真。真实录制的示教轨迹在机械臂上回放 —— 网格是机器人自己的 URDF，位姿来自回放过程中
+真实的 `/joint_states`：50 秒、100 Hz、六个关节全部在动。没有任何一帧是手工摆出来的。*
+
+<p align="center">
+  <img src="docs/figures/hardware.gif" width="372" alt="实物演示 —— 待补视频"/>
+  &nbsp;
+  <img src="docs/figures/rviz2.gif" width="372" alt="RViz2 录屏 —— 待补"/>
+</p>
+
+*实物（左）与 RViz2 实时界面（右）—— 把录像放进对应文件即可生效，见
+[`docs/MEDIA.md`](docs/MEDIA.md)。*
 
 六个达妙电机加一个夹爪，挂在同一块 MCU 驱动板上，通过 `/dev/ttyACM0` 用「下行 50 字节 /
 上行 46 字节」的二进制协议通信。原始 ROS 1 工程原样保留在 [`reference/`](reference/)，
@@ -30,11 +42,11 @@
 
 | | |
 |---|---|
-| **移植** | 5 个 catkin 包 → 7 个 ament 包 · 21 个可执行文件 · 8 082 行 C++ |
-| **协议** | 对虚拟驱动板 **7/7** 项通过 —— 六关节定位精度 **< 0.002 rad** |
-| **链路** | 仿真端到端 **6/6** 项通过，`/joint_states` **100 Hz** |
-| **保持一致** | 所有增益、阈值、帧偏移未改；修正 3 处上游缺陷 —— 见 [CHANGELOG](CHANGELOG.md) |
-| **未验证** | 实机物理特性 · RealSense 实物相机 · 图形界面交互 —— 见[下文](#未验证的部分) |
+| **移植** | 5 个 catkin 包 → 7 个 ament 包 · 21 个可执行文件 |
+| **协议** | **7/7** 项通过，六关节精度 **< 0.002 rad** |
+| **链路** | 端到端 **6/6** 项通过，**100 Hz** |
+| **保持一致** | 增益与帧偏移未改；修正 3 处上游缺陷 |
+| **未验证** | 实机 · RealSense · 图形界面 —— 见[下文](#未验证的部分) |
 
 ## 快速开始
 
@@ -87,10 +99,27 @@ ros2 run miku_sim run_serial_hil_test.sh    # 7 项
 ros2 run miku_sim run_sim_e2e_test.sh       # 6 项
 ```
 
-| 套件 | 检查内容 |
+`run_serial_hil_test.sh` —— 真实 `hardware` 二进制对虚拟驱动板：
+
+| 检查项 | 结果 |
 |---|---|
-| **串口协议** | 驱动板初始化 · 双向帧流 · 六关节定位精度 **< 0.002 rad** · MIT 力矩前馈符号与幅值 · 重力下垂被前馈消除 · 夹爪接触后卡住 · 运行中拔板子不退出 |
-| **控制链路** | 链路 **100 Hz** · TF 树完整 · IK 闭环使机械臂真的运动 · 重力补偿悬停漂移 **0.0000 rad** · 真实示教文件回放（**7 325 点**） · 夹爪状态机到达「已夹到」 |
+| 驱动板初始化、双向帧流 | ✅ |
+| 六关节定位精度 | **< 0.002 rad** |
+| MIT 力矩前馈符号与幅值 | ✅ |
+| 重力下垂被前馈消除 | ✅ |
+| 夹爪接触后卡住 | ✅ |
+| 运行中拔掉驱动板 | 节点不退出 |
+
+`run_sim_e2e_test.sh` —— 整条链路在仿真中闭环：
+
+| 检查项 | 结果 |
+|---|---|
+| `/joint_states` 频率 | **100 Hz** |
+| TF 树 `base_link → link_6` | 完整 |
+| IK 闭环使机械臂真的运动 | ✅ |
+| 重力补偿悬停漂移 | **0.0000 rad** |
+| 真实示教文件回放 | **7 325 点** |
+| 夹爪状态机到达「已夹到」 | ✅ |
 
 定位精度那一项对移植最关键：字节序、字段偏移或 ×1000 约定只要错一处，都会在这里表现为固定偏差。
 
@@ -110,16 +139,16 @@ ros2 run miku_sim run_sim_e2e_test.sh       # 6 项
 
 ```
 src/
-  arm_control/                KDL 正逆解 · 直线规划 · 重力补偿 · 夹爪状态机
-  hardware/                   串口节点 · 轨迹复现 · 示教录制 · 各测试节点
-  miku_sim/                   虚拟驱动板、仿真电机、两套自动化测试
-  miku_dummy/                 URDF、meshes、RViz2 配置
-  miku_dummy_moveit_config/   MoveIt 2 配置（SRDF + 规划器参数）
-  aruco/                      ArUco 检测器、ROS 2 节点、标记制作资料
-  deep_camera/                RealSense RGB-D 采集、位姿估计、视觉引导抓取
-docs/                         PORTING.md · TESTING.md · OVERVIEW.md · figures/
-reference/ros1-original/      原始 ROS 1 工作空间，未改动（带 COLCON_IGNORE）
-tools/                        演示录制、配图生成、关节状态采集
+  arm_control/               KDL 正逆解、直线规划、重力补偿、夹爪状态机
+  hardware/                  串口节点、轨迹复现、示教录制、各测试节点
+  miku_sim/                  虚拟驱动板、仿真电机、两套自动化测试
+  miku_dummy/                URDF、meshes、RViz2 配置
+  miku_dummy_moveit_config/  MoveIt 2 配置（SRDF + 规划器参数）
+  aruco/                     检测器、ROS 2 节点、标记制作资料
+  deep_camera/               RealSense RGB-D 采集、位姿估计
+docs/                        PORTING.md、TESTING.md、OVERVIEW.md、MEDIA.md
+reference/ros1-original/     原始 ROS 1 工作空间，未改动（COLCON_IGNORE）
+tools/                       演示录制、配图生成、实物视频导入
 ```
 
 ## 文档
@@ -129,6 +158,7 @@ tools/                        演示录制、配图生成、关节状态采集
 | [`docs/OVERVIEW.md`](docs/OVERVIEW.md) | 为什么移植、机械臂做什么、两个替代品如何工作 |
 | [`docs/PORTING.md`](docs/PORTING.md) | ROS 1 → ROS 2 映射规则，以及每一处不适用之处 |
 | [`docs/TESTING.md`](docs/TESTING.md) | 每项断言检查什么、配图如何重新录制 |
+| [`docs/MEDIA.md`](docs/MEDIA.md) | 如何加入实物录像；两个预留位置 |
 | [`CHANGELOG.md`](CHANGELOG.md) | 含修正的三处上游缺陷 |
 
 ## 许可

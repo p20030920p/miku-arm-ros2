@@ -19,11 +19,23 @@
 
 </div>
 
-![The simulated arm executing a recorded teach path — the URDF meshes driven by real joint-state playback](docs/figures/demo.gif)
+<p align="center">
+  <img src="docs/figures/demo.gif" width="760"
+       alt="The simulated arm executing a recorded teach path, driven by real joint-state playback"/>
+</p>
 
-*A recorded teach path replayed through the arm. The mesh is the robot's own URDF, the poses are
-real `/joint_states` from a playback run — 50 s at 100 Hz, all six joints moving. Nothing here is
-hand-posed.*
+*Simulation. A recorded teach path replayed through the arm — the mesh is the robot's own URDF, the
+poses are real `/joint_states` from a playback run: 50 s at 100 Hz, all six joints moving. Nothing
+here is hand-posed.*
+
+<p align="center">
+  <img src="docs/figures/hardware.gif" width="372" alt="Hardware demo — video pending"/>
+  &nbsp;
+  <img src="docs/figures/rviz2.gif" width="372" alt="RViz2 screen recording — pending"/>
+</p>
+
+*Hardware (left) and the live RViz2 session (right) — drop a recording in to fill either; see
+[`docs/MEDIA.md`](docs/MEDIA.md).*
 
 Six Damiao motors and a gripper on one MCU board, spoken to over `/dev/ttyACM0` with a 50-byte
 down / 46-byte up binary protocol. The original ROS 1 workspace is kept verbatim in
@@ -31,11 +43,11 @@ down / 46-byte up binary protocol. The original ROS 1 workspace is kept verbatim
 
 | | |
 |---|---|
-| **Port** | 5 catkin packages → 7 ament packages · 21 executables · 8 082 lines of C++ |
-| **Protocol** | **7/7** checks against a virtual driver board — six joints to **< 0.002 rad** |
-| **Pipeline** | **6/6** checks in simulation, `/joint_states` at **100 Hz** |
-| **Preserved** | every gain, threshold and frame offset; 3 upstream bugs fixed — [CHANGELOG](CHANGELOG.md) |
-| **Not verified** | the physical arm · RealSense hardware · GUI interaction — see [below](#what-is-not-verified) |
+| **Port** | 5 catkin → 7 ament packages · 21 executables · 8 082 lines |
+| **Protocol** | **7/7** checks, six joints to **< 0.002 rad** |
+| **Pipeline** | **6/6** checks at **100 Hz** |
+| **Preserved** | every gain and offset; 3 upstream bugs fixed |
+| **Not verified** | the arm, RealSense, GUI — [below](#what-is-not-verified) |
 
 ## Quick start
 
@@ -89,10 +101,27 @@ ros2 run miku_sim run_serial_hil_test.sh    # 7 checks
 ros2 run miku_sim run_sim_e2e_test.sh       # 6 checks
 ```
 
-| Suite | Checks |
+`run_serial_hil_test.sh` — the real `hardware` binary against the virtual board:
+
+| Check | Result |
 |---|---|
-| **Serial protocol** | board init · bidirectional flow · six-joint setpoint accuracy **< 0.002 rad** · MIT torque feed-forward signs and magnitudes · gravity droop removed by feed-forward · gripper stalls on contact · board unplugged mid-run |
-| **Pipeline** | link up at **100 Hz** · TF tree complete · IK closed loop moves the arm · gravity-compensated hover drifts **0.0000 rad** · real teach file replays (**7 325 points**) · gripper FSM reaches *grasped* |
+| Board init, bidirectional frame flow | ✅ |
+| Six-joint setpoint accuracy | **< 0.002 rad** |
+| MIT torque feed-forward, sign and magnitude | ✅ |
+| Gravity droop removed by feed-forward | ✅ |
+| Gripper stalls on contact | ✅ |
+| Board unplugged mid-run | node survives |
+
+`run_sim_e2e_test.sh` — the full pipeline, closed in simulation:
+
+| Check | Result |
+|---|---|
+| `/joint_states` rate | **100 Hz** |
+| TF tree `base_link → link_6` | complete |
+| IK closed loop moves the arm | ✅ |
+| Gravity-compensated hover drift | **0.0000 rad** |
+| Real teach file replays | **7 325 points** |
+| Gripper FSM reaches *grasped* | ✅ |
 
 The setpoint accuracy check is the one that matters for the port: any error in byte order, field
 offset or the ×1000 convention would appear there as a constant offset.
@@ -114,25 +143,26 @@ offset or the ×1000 convention would appear there as a constant offset.
 
 ```
 src/
-  arm_control/                KDL FK/IK · linear planner · gravity compensator · claw FSM
-  hardware/                   serial node · trajectory replay · teaching record · test nodes
-  miku_sim/                   virtual driver board, simulated motors, both test suites
-  miku_dummy/                 URDF, meshes, RViz2 config
-  miku_dummy_moveit_config/   MoveIt 2 config (SRDF + planner params)
-  aruco/                      ArUco detector, ROS 2 node, marker-production material
-  deep_camera/                RealSense RGB-D capture, pose estimation, visual grasping
-docs/                         PORTING.md · TESTING.md · OVERVIEW.md · figures/
-reference/ros1-original/      the ROS 1 workspace, unmodified (carries a COLCON_IGNORE)
-tools/                        demo recorder, figure generators, joint-state capture
+  arm_control/               KDL FK/IK, planner, gravity comp, claw FSM
+  hardware/                  serial node, replay, teaching record, tests
+  miku_sim/                  virtual driver board, simulated motors, tests
+  miku_dummy/                URDF, meshes, RViz2 config
+  miku_dummy_moveit_config/  MoveIt 2 config (SRDF + planner params)
+  aruco/                     detector, ROS 2 node, marker-production material
+  deep_camera/               RealSense RGB-D capture, pose estimation
+docs/                        PORTING.md, TESTING.md, OVERVIEW.md, figures/
+reference/ros1-original/     the ROS 1 workspace, unmodified (COLCON_IGNORE)
+tools/                       demo recorder, figure generators, video import
 ```
 
 ## Documentation
 
 | | |
 |---|---|
-| [`docs/OVERVIEW.md`](docs/OVERVIEW.md) | why a port, what the arm does, how the two substitutions work |
-| [`docs/PORTING.md`](docs/PORTING.md) | the ROS 1 → ROS 2 mapping rules and every place they did not apply |
-| [`docs/TESTING.md`](docs/TESTING.md) | what each check asserts, and how to re-record the figures |
+| [`docs/OVERVIEW.md`](docs/OVERVIEW.md) | why a port; what the arm does; how the substitutes work |
+| [`docs/PORTING.md`](docs/PORTING.md) | the ROS 1 → ROS 2 mapping rules, and where they did not apply |
+| [`docs/TESTING.md`](docs/TESTING.md) | what each check asserts; re-recording the figures |
+| [`docs/MEDIA.md`](docs/MEDIA.md) | adding real hardware footage; the two reserved slots |
 | [`CHANGELOG.md`](CHANGELOG.md) | including the three upstream defects fixed |
 
 ## License
