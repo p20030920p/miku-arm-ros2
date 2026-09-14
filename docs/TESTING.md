@@ -1,7 +1,7 @@
 # Testing
 
-Two suites, both runnable with no hardware. They answer different questions and are meant to be run
-together — between them they cover everything that could otherwise only be checked on the robot.
+Two suites, both runnable without hardware. They cover different layers and are meant to be run
+together.
 
 ```bash
 source /opt/ros/jazzy/setup.bash
@@ -87,16 +87,14 @@ arm_control_node ──Arm_tx──> sim_motor_board ──/Arm_rx──> arm_co
 
 ### Implementation notes
 
-Two things in this suite were hard-won and are worth knowing before editing it:
+Two things to know before editing this suite:
 
-- **Subscribe first, then publish.** Earlier versions used one-shot `ros2 topic echo --once` probes
-  and intermittently captured nothing, because ROS 2 discovery is asynchronous and the probe window
-  raced it. Checks 2–4 now start a subscriber *before* the publisher and read the result at the end
-  of the window.
-- **Reset the CLI daemon.** `ros2 daemon stop` runs at the top of the script. A daemon carrying a
-  stale graph from a previous crashed run makes python subscribers receive nothing at all — which
-  looks exactly like a broken robot. This was the actual cause of the TF check flapping; with the
-  reset it passes consistently.
+- **Subscribe first, then publish.** ROS 2 discovery is asynchronous, so one-shot
+  `ros2 topic echo --once` probes intermittently captured nothing. Checks 2–4 start a subscriber
+  before the publisher and read the result at the end of the window.
+- **Reset the CLI daemon.** `ros2 daemon stop` runs at the top of the script. A daemon holding a
+  stale graph from a crashed run makes python subscribers receive nothing, which is indistinguishable
+  from a broken robot. This caused the TF check to fail intermittently.
 
 Environment: `ROS_DOMAIN_ID` (default 72), same isolation as above.
 
@@ -129,9 +127,8 @@ model, re-measure them rather than leaving stale numbers in the figure.
 ## Adding a check
 
 Both suites are plain bash with a `pass`/`fail` helper and an exit-code summary, so a new check is a
-new numbered block. Two rules, both learned the hard way:
+new numbered block. Two rules:
 
-1. Never assert on a *single* sample. Sample a window, or assert on an extremum.
-2. Clean up the previous check's processes before the next one starts. `trajectory_track` has a
-   60 s timeout and will keep publishing mode-2 frames into the next check if you only `kill` the
-   wrapper.
+1. Sample a window or an extremum; never assert on a single sample.
+2. Kill the previous check's processes before starting the next. `trajectory_track` has a 60 s
+   timeout and keeps publishing mode-2 frames into the next check if only its wrapper is killed.

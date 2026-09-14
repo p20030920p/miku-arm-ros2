@@ -61,12 +61,11 @@ Then run the converter on the h264 file.
 
 ## A drop-in shell for the README
 
-The README references both slots like this, so replacing the file is the only step:
+The README references both slots with a fixed width, so overwriting the file is the only step.
+Paths in the README are relative to the repository root:
 
 ```html
-<p align="center">
-  <img src="docs/figures/hardware.gif" width="760" alt="..."/>
-</p>
+<img src="docs/figures/hardware.gif" width="372" alt="..."/>
 ```
 
 If you would rather have nothing at all in a slot — no placeholder — delete its block from

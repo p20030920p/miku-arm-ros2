@@ -24,9 +24,8 @@
        alt="The simulated arm executing a recorded teach path, driven by real joint-state playback"/>
 </p>
 
-*Simulation. A recorded teach path replayed through the arm — the mesh is the robot's own URDF, the
-poses are real `/joint_states` from a playback run: 50 s at 100 Hz, all six joints moving. Nothing
-here is hand-posed.*
+*Simulation. Recorded teach path replayed through the arm; mesh from the URDF, poses from
+`/joint_states` during a playback run. 50 s at 100 Hz.*
 
 <p align="center">
   <img src="docs/figures/hardware.gif" width="372" alt="Hardware demo — video pending"/>
@@ -34,12 +33,11 @@ here is hand-posed.*
   <img src="docs/figures/rviz2.gif" width="372" alt="RViz2 screen recording — pending"/>
 </p>
 
-*Hardware (left) and the live RViz2 session (right) — drop a recording in to fill either; see
-[`docs/MEDIA.md`](docs/MEDIA.md).*
+*Hardware (left) and RViz2 (right) — see [`docs/MEDIA.md`](docs/MEDIA.md).*
 
-Six Damiao motors and a gripper on one MCU board, spoken to over `/dev/ttyACM0` with a 50-byte
-down / 46-byte up binary protocol. The original ROS 1 workspace is kept verbatim in
-[`reference/`](reference/); everything under `src/` is the Jazzy port.
+Six Damiao motors and a gripper on one MCU board, reached over `/dev/ttyACM0` with a 50-byte down /
+46-byte up binary protocol. The ROS 1 workspace is in [`reference/`](reference/); `src/` is the
+Jazzy port.
 
 | | |
 |---|---|
@@ -77,20 +75,19 @@ The three `./launch_*.sh` scripts wrap these and home the arm on exit.
 
 ## The two substitutions
 
-The arm is unavailable, so the two things that could not otherwise be checked were each replaced.
-They answer different questions and are deliberately separate.
+Two pieces stand in for the arm, covering different layers.
 
-**`virtual_motor_board.py` — is the serial protocol right?** It implements the far side of the wire:
-`0x86C1` / `0x86C2` framing, field offsets, the ×1000 fixed point. Paired over a `socat` PTY, the
-**real `hardware` binary** runs unmodified against it.
+**`virtual_motor_board.py`** implements the driver board's side of the wire: `0x86C1` / `0x86C2`
+framing, field offsets, the ×1000 fixed point. Over a `socat` PTY it tests the serial protocol by
+running the real `hardware` binary against it.
 
-**`sim_motor_board` — is the control law right?** It replaces the board on the ROS side and
-publishes `/joint_states`, so the whole pipeline closes in simulation and the arm moves in RViz2.
+**`sim_motor_board`** replaces the board on the ROS side and publishes `/joint_states`, which closes
+the control loop in simulation.
 
 ![The real and simulated paths share every algorithm node; only the motor interface differs](docs/figures/architecture.png)
 
-The original never used MoveIt or `ros2_control` — it runs its own KDL kinematics and commands the
-motors directly in MIT mode. That is why substituting one box is enough to test the whole thing.
+The controller does not use MoveIt or `ros2_control`; it runs its own KDL kinematics and commands
+the motors in MIT mode. Only the motor interface therefore differs between the two paths.
 
 ## Verification
 
@@ -121,21 +118,20 @@ ros2 run miku_sim run_sim_e2e_test.sh       # 6 checks
 | Real teach file replays | **7 325 points** |
 | Gripper FSM reaches *grasped* | ✅ |
 
-The setpoint accuracy check is the one that matters for the port: any error in byte order, field
-offset or the ×1000 convention would appear there as a constant offset.
+Setpoint accuracy covers byte order, field offsets and the ×1000 scaling: an error in any of them
+appears there as a constant offset.
 
 ### What is *not* verified
 
-- **The physical arm.** The protocol is verified byte-for-byte and the control law in simulation,
-  but real stiffness, friction and the true gravity load are not. The gains in
-  `arm_control_params.yaml` were hand-tuned on the real arm and are unchanged — that is a claim,
-  not a measurement.
-- **The RealSense D435.** No camera. `deep_camera` and `aruco` build and were exercised against
-  synthetic images (750 mm depth, marker `ID=341`, full pose solved), never real sensor data.
-- **Joint limits.** `KDL::ChainIkSolverPos_LMA` ignores them, upstream and here. Unreachable
-  targets log `IK 失败，本步跳过` and are skipped — inherited, deliberately not "improved".
-- **GUI interaction.** This machine's Qt5 highgui creates no X window, so the mouse-pick and ESC
-  paths in `deep_camera` were never clicked.
+- **The physical arm.** Protocol and control law are verified; stiffness, friction and the real
+  gravity load are not. The gains in `arm_control_params.yaml` come from the original tuning and
+  are unverified.
+- **The RealSense D435.** No camera available. `deep_camera` and `aruco` were tested with synthetic
+  images (750 mm depth, marker `ID=341`, pose solved), not real sensor data.
+- **Joint limits.** `KDL::ChainIkSolverPos_LMA` ignores them, as upstream. Unreachable targets log
+  `IK 失败，本步跳过` and are skipped.
+- **GUI interaction.** Qt5 highgui creates no X window here, so the mouse-pick and ESC paths in
+  `deep_camera` are untested.
 
 ## Layout
 
