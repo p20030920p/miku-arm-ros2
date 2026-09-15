@@ -31,7 +31,7 @@
 </p>
 
 *在 RViz2 的 MotionPlanning 面板里规划并执行：MoveIt 为 `manipulator` 规划轨迹，
-`trajectory_bridge` 转成 `ArmMsg(mode=2)` 下发，仿真机械臂跟随。录制时回放放慢到 0.18×，
+`trajectory_bridge` 转成 `ArmMsg(mode=2)` 下发，仿真机械臂跟随。录制时电机回放放慢到 0.18×，
 实际到位误差 0.01 rad 以内。*
 
 机械臂为六个达妙电机加一个夹爪，挂在同一块 MCU 驱动板上，通过 `/dev/ttyACM0` 以「下行

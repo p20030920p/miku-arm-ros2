@@ -51,10 +51,20 @@ class Driver(rclpy.node.Node):
         if set(JOINTS).issubset(set(msg.name)):
             self.latest = [msg.position[msg.name.index(j)] for j in JOINTS]
 
-    def wait_state(self, timeout=10.0):
+    def wait_state(self, timeout=40.0):
+        """等第一帧 /joint_states。
+
+        DDS 发现在这台机器上偶尔要十几秒（尤其刚 daemon stop 之后），
+        所以给足时间并周期性打印等待时长，不要静默失败。
+        """
         t0 = time.time()
+        last = 0.0
         while self.latest is None and time.time() - t0 < timeout:
             rclpy.spin_once(self, timeout_sec=0.1)
+            waited = time.time() - t0
+            if waited - last >= 5.0:
+                last = waited
+                print(f"  等待 /joint_states… {waited:.0f}s")
         return self.latest
 
 
@@ -98,17 +108,18 @@ def build_goal(vel_scale, acc_scale):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", default=os.path.join(ROOT, "docs/figures/demo_rviz.gif"))
-    ap.add_argument("--width", type=int, default=880, help="GIF 宽度")
-    ap.add_argument("--fps", type=float, default=14.0)
-    ap.add_argument("--frames-dir", default="/tmp/rviz_frames")
-    ap.add_argument("--vel-scale", type=float, default=0.12,
-                    help="轨迹速度缩放，越小录得越清楚")
-    ap.add_argument("--acc-scale", type=float, default=0.12,
-                    help="轨迹加速度缩放")
+    ap.add_argument("--width", type=int, default=880, help="GIF 输出宽度")
+    ap.add_argument("--speed", type=float, default=1.0,
+                    help="GIF 相对真实时间的播放倍速；2.0 表示快一倍")
+    ap.add_argument("--frames-dir", default="/tmp/rviz_frames",
+                    help="中间帧的落盘目录，每次运行会清空")
+    ap.add_argument("--vel-scale", type=float, default=0.5,
+                    help="MoveIt 速度缩放；只影响轨迹的时间参数化，"
+                         "真正拖慢机械臂的是 launch 的 speed_scale")
+    ap.add_argument("--acc-scale", type=float, default=0.5,
+                    help="MoveIt 加速度缩放，同上")
     ap.add_argument("--hold-fps", type=float, default=25.0,
                     help="抓帧频率")
-    ap.add_argument("--capture-scale", type=int, default=2,
-                    help="抓帧时先做整数降采样，减少 PIL 缩放耗时")
     ap.add_argument("--crop", default="0,60,1400,920",
                     help="窗口内裁剪区域 x0,y0,x1,y1；去掉底部 Displays 面板")
     ap.add_argument("--capture", default="0,60,1900,1250",
@@ -150,6 +161,7 @@ def main():
         col_box = None
 
     frames = []
+    frame_t = []          # 每帧的实际抓取时刻，用来还原真实时长
     idx = 0
 
     cap = tuple(int(v) for v in args.capture.split(","))
@@ -176,6 +188,7 @@ def main():
         path = os.path.join(args.frames_dir, f"{idx:05d}.png")
         im.save(path)
         frames.append(path)
+        frame_t.append(time.time())
         idx += 1
     every = 1.0 / args.hold_fps
 
@@ -244,19 +257,23 @@ def main():
         print("没有抓到帧", file=sys.stderr)
         return 1
 
-    # 合成 GIF：统一调色板，控制体积
+    # 合成 GIF：每帧沿用抓取时的真实间隔，这样播放速度由抓帧节奏决定，
+    # 不再被"抽帧到目标帧率"那套换算悄悄改掉（之前就是这么把 4 s 压成 1 s 的）。
     imgs = [Image.open(p).convert("RGB") for p in frames]
-    # 抽帧到目标帧率
-    src_fps = args.hold_fps
-    step = max(1, int(round(src_fps / args.fps)))
-    imgs = imgs[::step]
+    gaps = [(frame_t[i] - frame_t[i - 1]) * 1000.0 / args.speed
+            for i in range(1, len(frame_t))]
+    if not gaps:
+        gaps = [1000.0 / args.hold_fps]
+    delays = [max(20, min(1000, int(round(g)))) for g in gaps] + [int(gaps[-1])]
     pal = imgs[0].quantize(colors=128, method=Image.MEDIANCUT)
     quant = [im.quantize(palette=pal, dither=Image.FLOYDSTEINBERG) for im in imgs]
     os.makedirs(os.path.dirname(args.out), exist_ok=True)
     quant[0].save(args.out, save_all=True, append_images=quant[1:],
-                  duration=int(1000 / args.fps), loop=0, optimize=True)
+                  duration=delays, loop=0, optimize=True)
+    total = sum(delays) / 1000.0
     size = os.path.getsize(args.out)
-    print(f"已写出 {os.path.relpath(args.out, ROOT)}  {len(quant)} 帧  {size/1024:.0f} KB")
+    print(f"已写出 {os.path.relpath(args.out, ROOT)}  {len(quant)} 帧  "
+          f"播放 {total:.1f}s（真实 {sum(delays)*args.speed/1000:.1f}s）  {size/1024:.0f} KB")
     return 0 if err < 0.05 else 1
 
 

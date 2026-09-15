@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
 """从演示用 RViz 配置派生出录制用配置。
 
-区别只有一个：只保留 MotionPlanning 一个面板。RViz 的窗口最小尺寸由各面板的
-sizeHint 决定，去掉 Displays 面板后窗口可以缩到 1400x900，3D 视口随之变宽，
-录出来的 GIF 里机械臂才看得清。显示项本身不改动。
+改动只有面板和窗口尺寸，显示项一个不动：
+
+  · 去掉 Views 面板（录制时不需要调相机，省一列控件）
+  · Displays 面板的树高从 220 压到 120，它只用来证明模型加载成功，不占地方
+  · 窗口写死 1900x1250
+
+Displays 面板不能删：RViz 在没有它的时候会自己补一个空的出来，反而更占宽度。
 
     python3 tools/make_record_config.py
 """
@@ -16,8 +20,7 @@ ROOT = os.path.dirname(HERE)
 SRC = os.path.join(ROOT, "src/miku_moveit_demo/rviz/moveit_demo.rviz")
 DST = os.path.join(ROOT, "src/miku_moveit_demo/rviz/moveit_demo_record.rviz")
 
-# 只留 Displays 面板：RViz 在没有 Displays 面板时会自己补一个空的出来，
-# 反而更宽，所以它必须留着。
+# 保留 Displays 面板（RViz 缺了它会自己补一个空的，更宽），但压扁
 DISPLAYS_PANEL = """Panels:
   - Class: rviz_common/Displays
     Name: Displays

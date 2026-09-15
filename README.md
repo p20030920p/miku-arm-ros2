@@ -30,9 +30,10 @@ during playback. 50 s at 100 Hz.*
        alt="MoveIt planning and execution driven from the RViz2 MotionPlanning panel"/>
 </p>
 
-*Planning and execution from the RViz2 MotionPlanning panel: MoveIt plans a trajectory for
-`manipulator`, `trajectory_bridge` converts it to `ArmMsg(mode=2)`, and the simulated arm follows
-it. Playback is slowed to 0.18× for recording; the run reaches the goal within 0.01 rad.*
+*Planning and execution from the RViz2 MotionPlanning panel: MoveIt plans for `manipulator`,
+`trajectory_bridge` converts the trajectory to `ArmMsg(mode=2)`, and the simulated arm follows it.
+Motor playback is slowed to 0.18× so the motion is legible; the run reaches the goal within
+0.01 rad.*
 
 The arm is six Damiao motors and a gripper on one MCU board, driven over `/dev/ttyACM0` with a
 50-byte down / 46-byte up binary protocol.

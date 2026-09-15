@@ -35,15 +35,18 @@ ros2 launch miku_moveit_demo moveit_demo.launch.py record:=true speed_scale:=0.1
 # terminal 2
 python3 tools/rviz_demo.py --out docs/figures/demo_rviz.gif --width 900 \
         --crop 20,60,1620,980 --capture 20,60,1620,980 \
-        --vel-scale 0.5 --acc-scale 0.5 --hold-fps 20 --fps 11
+        --vel-scale 0.5 --acc-scale 0.5 --hold-fps 20 --speed 1.35
 ```
 
 Flags that matter:
 
 - `--crop` is the region of the RViz window that ends up in the GIF (the panel plus the 3D view).
   `--capture` is the region read from X, which should cover `--crop`.
-- `--hold-fps` is the capture rate. Past ~20 Hz the captures themselves dominate the run time.
-- `--fps` is the GIF playback rate. Lower it to slow the finished animation down.
+- `--hold-fps` is the *target* capture rate. It is a ceiling, not a promise: each capture costs
+  about 45 ms, so on a big window the real rate lands lower.
+- `--speed` scales the finished GIF against real time. Each frame keeps the interval it was
+  actually captured at, so `1.0` plays at true speed regardless of how fast capture ran. Earlier
+  versions resampled to a fixed fps and silently compressed a 4 s run into 1 s.
 - `speed_scale` on the launch is what actually slows the *arm*; MoveIt's velocity scaling only
   changes how the trajectory is time-parameterised, and `trajectory_bridge` re-times it anyway.
 
@@ -105,5 +108,5 @@ laptop and unusable on a phone. If one is too big, in this order:
 2. Reduce `--width` to 640 — still readable in the README's content column.
 3. Lower `--fps` to 10, then `--colors` to 64.
 
-For reference, `demo.gif` is 1.2 MB (85 frames, 760×480) and `demo_rviz.gif` is 0.2 MB (21 frames,
-900×517).
+For reference, `demo.gif` is 1.2 MB (85 frames, 760×480) and `demo_rviz.gif` is 0.2 MB (24 frames,
+900×517, 7.5 s).
