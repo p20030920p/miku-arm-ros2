@@ -10,7 +10,12 @@
 - `run_sim_e2e_test.sh` — 6 checks closing the full pipeline in simulation, including teach-path
   replay of a recorded trajectory.
 - `miku_dummy_moveit_config` — MoveIt 2 configuration for `miku_arm`.
-- `tools/` — figure generators and a joint-state capture tool.
+- `miku_moveit_demo` — MoveIt 2 planning demo: `trajectory_bridge` serves
+  `FollowJointTrajectory` and republishes trajectories as `ArmMsg(mode=2)`, so **Plan** and
+  **Execute** in the RViz2 MotionPlanning panel drive the arm in simulation.
+- `tools/` — figure generators, a joint-state capture tool, and `rviz_demo.py`, which records the
+  MoveIt demo from the RViz2 window.
+- `docs/figures/demo_rviz.gif` — the MoveIt planning and execution demo.
 - Real teach recordings (38 610 lines) under `src/hardware/teach_path/`.
 - ArUco marker production material (encoding layout, SVGs, A4 sheet) under `src/aruco/aruco_set/`.
 - `reference/ros1-original/` — the ROS 1 workspace, unmodified, with a `COLCON_IGNORE`.
@@ -23,6 +28,11 @@
   names.
 
 ### Fixed
+- `miku_dummy_moveit_config/config/joint_limits.yaml`: every joint had
+  `has_acceleration_limits: false` and `max_acceleration: 0`. MoveIt's
+  `AddTimeOptimalParameterization` adapter then failed with "No acceleration limit was defined for
+  joint joint_N", producing trajectories with zero timestamps that were planned but never
+  executed. Real limits are now set.
 - `hardware.cpp`: `catch (SerialException&)` preceded `catch (IOException&)`, making the latter
   branch unreachable, so a vanished device was misreported. Order swapped.
 - `aruco`: the `topic_marker_remove` parameter was read into the *register* variable, leaving

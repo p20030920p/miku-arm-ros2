@@ -25,12 +25,21 @@
 *Recorded teach path replayed in simulation: mesh from the URDF, poses from `/joint_states`
 during playback. 50 s at 100 Hz.*
 
+<p align="center">
+  <img src="docs/figures/demo_rviz.gif" width="760"
+       alt="MoveIt planning and execution driven from the RViz2 MotionPlanning panel"/>
+</p>
+
+*Planning and execution from the RViz2 MotionPlanning panel: MoveIt plans a trajectory for
+`manipulator`, `trajectory_bridge` converts it to `ArmMsg(mode=2)`, and the simulated arm follows
+it. Playback is slowed to 0.18× for recording; the run reaches the goal within 0.01 rad.*
+
 The arm is six Damiao motors and a gripper on one MCU board, driven over `/dev/ttyACM0` with a
 50-byte down / 46-byte up binary protocol.
 
 | | |
 |---|---|
-| **Packages** | `arm_control` · `hardware` · `deep_camera` · `aruco` · `miku_dummy` · `miku_dummy_moveit_config` · `miku_sim` |
+| **Packages** | `arm_control` · `hardware` · `deep_camera` · `aruco` · `miku_dummy` · `miku_dummy_moveit_config` · `miku_sim` · `miku_moveit_demo` |
 | **Control** | KDL FK/IK, straight-line interpolation, six-channel gravity compensation, 4-state gripper FSM |
 | **Modes** | `mode=1` MIT (stiffness, damping, torque feed-forward) · `mode=2` velocity-limited position |
 | **Simulation** | no hardware required — simulated motors and a protocol-level driver-board peer |
@@ -86,6 +95,18 @@ ros2 launch miku_sim sim.launch.py           # simulated motors + RViz2
 ros2 run hardware trajectory_track           # replay a recorded trajectory
 ```
 
+### Planning with MoveIt 2
+
+```bash
+ros2 launch miku_moveit_demo moveit_demo.launch.py
+```
+
+This brings up the simulated motors, `move_group`, `trajectory_bridge` and RViz2. Drag the
+interactive marker in the 3D view to set a goal, then use **Plan** and **Execute** in the
+MotionPlanning panel. `trajectory_bridge` publishes the trajectory as `ArmMsg(mode=2)` on
+`/Arm_tx` at 50 Hz; `speed_scale:=0.2` slows playback for demonstration, and `record:=true`
+switches RViz to the single-panel layout used for recording.
+
 `miku_sim` provides two substitutes, covering different layers:
 
 - **`sim_motor_board`** replaces the driver board on the ROS side and publishes `/joint_states`,
@@ -138,6 +159,7 @@ covered.
 | `aruco` | ArUco detector, ROS 2 node, marker-production files |
 | `miku_dummy` | URDF, meshes, RViz2 configuration |
 | `miku_dummy_moveit_config` | MoveIt 2 configuration (SRDF, planner parameters) |
+| `miku_moveit_demo` | MoveIt 2 + RViz2 planning demo, trajectory bridge to `ArmMsg` |
 
 ## Documentation
 

@@ -8,6 +8,15 @@ tools/__pycache__/
 **/__pycache__/
 *.pyc
 
+# ---- compiled helpers in tools/win_capture ----
+# sources are win_grab.c / win_id_resize.c / win_resize.c / xclick.c / pngrab.c;
+# build them locally with:  make -C tools/win_capture
+tools/win_capture/win_grab
+tools/win_capture/win_id_resize
+tools/win_capture/win_resize
+tools/win_capture/xclick
+tools/win_capture/pngrab
+
 # ---- runtime output ----
 # teach recordings written by `read_angle`; the three checked-in reference
 # recordings under src/hardware/teach_path/ are deliberately kept.

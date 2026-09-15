@@ -25,12 +25,21 @@
 *录制的示教轨迹在仿真中回放：网格取自 URDF，位姿取自回放过程的 `/joint_states`。
 50 秒、100 Hz。*
 
+<p align="center">
+  <img src="docs/figures/demo_rviz.gif" width="760"
+       alt="在 RViz2 的 MotionPlanning 面板里规划并执行"/>
+</p>
+
+*在 RViz2 的 MotionPlanning 面板里规划并执行：MoveIt 为 `manipulator` 规划轨迹，
+`trajectory_bridge` 转成 `ArmMsg(mode=2)` 下发，仿真机械臂跟随。录制时回放放慢到 0.18×，
+实际到位误差 0.01 rad 以内。*
+
 机械臂为六个达妙电机加一个夹爪，挂在同一块 MCU 驱动板上，通过 `/dev/ttyACM0` 以「下行
 50 字节 / 上行 46 字节」的二进制协议通信。
 
 | | |
 |---|---|
-| **软件包** | `arm_control` · `hardware` · `deep_camera` · `aruco` · `miku_dummy` · `miku_dummy_moveit_config` · `miku_sim` |
+| **软件包** | `arm_control` · `hardware` · `deep_camera` · `aruco` · `miku_dummy` · `miku_dummy_moveit_config` · `miku_sim` · `miku_moveit_demo` |
 | **控制** | KDL 正逆解、直线插补、六通道重力补偿、四态夹爪状态机 |
 | **模式** | `mode=1` MIT（刚度、阻尼、力矩前馈） · `mode=2` 限速位置控制 |
 | **仿真** | 无需硬件：仿真电机 + 协议级虚拟驱动板 |
@@ -134,6 +143,7 @@ ros2 run miku_sim run_sim_e2e_test.sh        # 控制链路，6 项
 | `aruco` | ArUco 检测器、ROS 2 节点、标记制作资料 |
 | `miku_dummy` | URDF、meshes、RViz2 配置 |
 | `miku_dummy_moveit_config` | MoveIt 2 配置（SRDF、规划器参数） |
+| `miku_moveit_demo` | MoveIt 2 + RViz2 规划演示，轨迹桥接到 `ArmMsg` |
 
 ## 文档
 

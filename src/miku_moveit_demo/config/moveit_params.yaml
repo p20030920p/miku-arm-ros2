@@ -1,0 +1,38 @@
+# ============================================================================
+# MoveIt 2 参数（针对本仓库的 miku_arm 配置）
+#
+# 这里显式列出参数，而不用 moveit_configs_utils 的自动推断，原因有三：
+#   1. Jazzy 的 builder 会在 config/ 下找不到 pilz_cartesian_limits.yaml 而报错
+#      （MoveIt 1 时代的文件名是 cartesian_limits.yaml）
+#   2. joint_limits.yaml 里写的是 `max_velocity: 2`，YAML 解析为 int，
+#      而 MoveIt 2 要求 double，会抛 InvalidParameterTypeException
+#   3. MoveIt 1 的 ompl_planning.yaml 没有 planning_plugins / request_adapters
+#      字段，MoveIt 2 必须显式声明
+#
+# 机器人描述（robot_description / _semantic / _kinematics / _planning）由
+# launch 文件从 URDF、SRDF 与各 yaml 读入后合并，见 moveit_demo.launch.py。
+# ============================================================================
+
+move_group:
+  ros__parameters:
+    planning_pipelines:
+      pipeline_names: ["ompl"]
+      default_planning_pipeline: ompl
+
+    # 演示使用 MoveIt 的 fake controller：它只推进轨迹并更新 /joint_states，
+    # 真正的机械臂动作由 miku_moveit_demo/trajectory_bridge 转发 ArmMsg 完成。
+    moveit_controller_manager: moveit_fake_controller_manager/MoveItFakeControllerManager
+    moveit_manage_controllers: false
+
+    trajectory_execution:
+      allowed_execution_duration_scaling: 1.5
+      allowed_goal_duration_margin: 0.5
+      allowed_start_tolerance: 0.05
+      execution_duration_monitoring: false
+
+    # 单位：秒 / 次
+    planning_scene_monitor_options:
+      publish_planning_scene: true
+
+    # 无 3D 传感器，关掉 octomap 监控以免刷警告
+    octomap: false

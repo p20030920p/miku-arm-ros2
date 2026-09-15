@@ -134,6 +134,10 @@ figure is scaled down until the labels are unreadable. The generator asserts its
 height budget and fails rather than emitting a broken figure. Captions and panel data for the
 figures carry measured values; re-measure them if the simulator model changes.
 
+`docs/figures/demo_rviz.gif` is recorded from a live RViz2 window by `tools/rviz_demo.py`. It needs
+a real display, so it cannot be regenerated headlessly. See [`RECORDING.md`](RECORDING.md) for the
+command and for why the recorder drives MoveIt's action interface instead of synthesising clicks.
+
 ## Coverage
 
 Both suites run without hardware. Together they cover the serial protocol and the control pipeline.
@@ -149,6 +153,13 @@ Not covered:
   Unreachable targets log `IK 失败，本步跳过` and are skipped.
 - **GUI interaction.** Qt5 highgui needs an X display; the mouse-pick and ESC paths in
   `deep_camera` are not exercised by the suites.
+- **The MoveIt demo's GUI.** `trajectory_bridge` and the `FollowJointTrajectory` link to it are
+  covered indirectly — `tools/rviz_demo.py` runs the same `/move_action` path the panel's
+  **Execute** button uses and fails if the final joint error exceeds 0.05 rad — but clicking the
+  panel itself is not. Synthetic button events are not delivered to Qt on this Wayland/XWayland
+  setup (see `RECORDING.md`). Collision checking against a cluttered scene is also untested; the
+  planning scene is empty.
+
 
 ## Adding a check
 
