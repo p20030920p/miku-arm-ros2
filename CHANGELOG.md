@@ -3,6 +3,9 @@
 ## [Unreleased]
 
 ### Added
+- `docs/figures/demo_hardware.gif` — the real arm on the bench following a goal dragged in the RViz2
+  MotionPlanning panel. It takes the front-page slot that `demo_rviz.gif` held, and was made with the
+  converter below from a hand-held phone take.
 - `miku_sim` package: `virtual_motor_board.py`, a byte-faithful peer for the Damiao driver board's
   binary protocol, and `sim_motor_board`, a ROS-side motor substitute that publishes `/joint_states`.
 - `run_serial_hil_test.sh` — 7 checks driving the real `hardware` binary against the virtual board
@@ -21,6 +24,12 @@
 - `reference/ros1-original/` — the ROS 1 workspace, unmodified, with a `COLCON_IGNORE`.
 
 ### Changed
+- **README restructured as library documentation**: the two verification tables became one, the
+  packages and documentation tables are merged, a Provenance section states what the port added over
+  the unmodified ROS 1 workspace, and the verification section names the machine the checks ran on
+  (Huawei MateBook 14 2022, Intel Core i5-1240P, CPU only). No code change.
+- `tools/make_figure_from_video.py` gained `--crop x0,y0,x1,y1`, applied before the resize, so a
+  portrait phone take can be cut to the bench instead of published as a 400 × 711 strip.
 - `hardware` serial device and baud rate are now node parameters (`serial_port`,
   `serial_baudrate`). Defaults are unchanged from the previously hard-coded `/dev/ttyACM0` and
   115200, so real-robot behaviour is identical.
@@ -28,6 +37,8 @@
   names.
 
 ### Fixed
+- `tools/make_figure_from_video.py` measured `--duration` from the start of the file rather than
+  from the seek point, so `--start 10 --duration 8` produced an 18 s clip. It now produces 8 s.
 - `miku_dummy_moveit_config/config/joint_limits.yaml`: every joint had
   `has_acceleration_limits: false` and `max_acceleration: 0`. MoveIt's
   `AddTimeOptimalParameterization` adapter then failed with "No acceleration limit was defined for

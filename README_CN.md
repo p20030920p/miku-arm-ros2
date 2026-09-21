@@ -11,7 +11,7 @@
 [![C++17](https://img.shields.io/badge/C%2B%2B-17-00599C?logo=cplusplus&logoColor=white)](#构建)
 [![License](https://img.shields.io/badge/license-MIT-3DA639)](LICENSE)
 
-[构建](#构建) &nbsp;•&nbsp; [使用硬件](#使用硬件) &nbsp;•&nbsp; [无硬件仿真](#无硬件仿真) &nbsp;•&nbsp; [验证](#验证) &nbsp;•&nbsp; [文档](#文档)
+[构建](#构建) &nbsp;•&nbsp; [使用硬件](#使用硬件) &nbsp;•&nbsp; [无硬件仿真](#无硬件仿真) &nbsp;•&nbsp; [验证](#验证) &nbsp;•&nbsp; [来源](#来源)
 
 *[English](README.md) &nbsp;|&nbsp; 中文*
 
@@ -26,13 +26,12 @@
 50 秒、100 Hz。*
 
 <p align="center">
-  <img src="docs/figures/demo_rviz.gif" width="760"
-       alt="在 RViz2 的 MotionPlanning 面板里规划并执行"/>
+  <img src="docs/figures/demo_hardware.gif" width="400"
+       alt="实验台上的自制机械臂跟随 RViz2 运动规划面板里拖动的目标"/>
 </p>
 
-*在 RViz2 的 MotionPlanning 面板里规划并执行：MoveIt 为 `manipulator` 规划轨迹，
-`trajectory_bridge` 转成 `ArmMsg(mode=2)` 下发，仿真机械臂跟随。录制时电机回放放慢到 0.18×，
-实际到位误差 0.01 rad 以内。*
+*实机演示。在实物（自制机械臂，实验台上）中，用本程序在 RViz2 的 MotionPlanning 面板里拖动机械臂，
+实机通过同一套 `trajectory_bridge` 链路执行，可以达到上面的效果。*
 
 机械臂为六个达妙电机加一个夹爪，挂在同一块 MCU 驱动板上，通过 `/dev/ttyACM0` 以「下行
 50 字节 / 上行 46 字节」的二进制协议通信。
@@ -42,8 +41,21 @@
 | **软件包** | `arm_control` · `hardware` · `deep_camera` · `aruco` · `miku_dummy` · `miku_dummy_moveit_config` · `miku_sim` · `miku_moveit_demo` |
 | **控制** | KDL 正逆解、直线插补、六通道重力补偿、四态夹爪状态机 |
 | **模式** | `mode=1` MIT（刚度、阻尼、力矩前馈） · `mode=2` 限速位置控制 |
-| **仿真** | 无需硬件：仿真电机 + 协议级虚拟驱动板 |
+| **验证** | 13 项检查，无需接硬件——串口协议 7 项、控制链路 6 项 |
 | **来源** | 由 ROS 1 Noetic 工程移植，原始工作空间见 [`reference/`](reference/) |
+
+## 为什么要做这两套仿真
+
+改动运动学、重力补偿或夹爪状态机之后，不必等机械臂在场就能验证，这是这两套仿真存在的理由。
+它们覆盖不同的层：
+
+- **`sim_motor_board`** 在 ROS 侧替换驱动板并发布 `/joint_states`，使控制回路在仿真中闭环。
+- **`virtual_motor_board.py`** 实现驱动板一侧的协议 —— `0x86C1` / `0x86C2` 帧头、字段偏移、
+  ×1000 定点。经 `socat` 的 PTY 配对，用它测试串口协议，被测对象是真实的 `hardware` 二进制。
+
+![两条路径运行同一批 arm_control 二进制，仅电机接口不同](docs/figures/architecture.png)
+
+控制器不经过 MoveIt 或 `ros2_control`，而是自己跑 KDL 运动学、以 MIT 模式下发电机指令。
 
 ## 构建
 
@@ -95,15 +107,16 @@ ros2 launch miku_sim sim.launch.py           # 仿真电机 + RViz2
 ros2 run hardware trajectory_track           # 复现录制的轨迹
 ```
 
-`miku_sim` 提供两个替代品，覆盖不同的层：
+### 用 MoveIt 2 规划
 
-- **`sim_motor_board`** 在 ROS 侧替换驱动板并发布 `/joint_states`，使控制回路在仿真中闭环。
-- **`virtual_motor_board.py`** 实现驱动板一侧的协议 —— `0x86C1` / `0x86C2` 帧头、字段偏移、
-  ×1000 定点。经 `socat` 的 PTY 配对，用它测试串口协议，被测对象是真实的 `hardware` 二进制。
+```bash
+ros2 launch miku_moveit_demo moveit_demo.launch.py
+```
 
-![两条路径运行同一批 arm_control 二进制，仅电机接口不同](docs/figures/architecture.png)
-
-控制器不经过 MoveIt 或 `ros2_control`，而是自己跑 KDL 运动学、以 MIT 模式下发电机指令。
+该启动会拉起仿真电机、`move_group`、`trajectory_bridge` 与 RViz2。在三维视图里拖动交互标记设定目标，
+再点 MotionPlanning 面板的 **Plan** 与 **Execute**。`trajectory_bridge` 以 50 Hz 把轨迹作为
+`ArmMsg(mode=2)` 发布到 `/Arm_tx`；`speed_scale:=0.2` 放慢回放便于演示，`record:=true`
+把 RViz 切到录制用的单面板布局。
 
 ## 验证
 
@@ -112,48 +125,37 @@ ros2 run miku_sim run_serial_hil_test.sh     # 串口协议，7 项
 ros2 run miku_sim run_sim_e2e_test.sh        # 控制链路，6 项
 ```
 
-| 串口协议 | 结果 |
-|---|---|
-| 驱动板初始化、双向帧流 | 通过 |
-| 六关节定位精度 | < 0.002 rad |
-| MIT 力矩前馈符号与幅值 | 通过 |
-| 重力下垂被前馈消除 | 通过 |
-| 夹爪接触后卡住 | 通过 |
-| 运行中拔掉驱动板 | 节点不退出 |
+两套测试都只跑 CPU，在一台轻薄本上完成（华为 MateBook 14，Intel Core i5-1240P）；整条链路不需要 GPU。
 
-| 控制链路 | 结果 |
+| 套件 | 验证内容 |
 |---|---|
-| `/joint_states` 频率 | 100 Hz |
-| TF 树 `base_link → link_6` | 完整 |
-| IK 闭环使机械臂运动 | 通过 |
-| 重力补偿悬停漂移 | 0.0000 rad |
-| 复现录制的示教文件 | 7 325 点 |
-| 夹爪状态机到达「已夹到」 | 通过 |
+| `run_serial_hil_test.sh` | 驱动板初始化与双向帧流；六关节定位精度 < 0.002 rad；MIT 力矩前馈符号与幅值；重力下垂被前馈消除；夹爪接触后卡住；运行中拔掉驱动板节点不退出 |
+| `run_sim_e2e_test.sh` | `/joint_states` 频率 100 Hz；TF 树 `base_link → link_6` 完整；IK 闭环使机械臂运动；重力补偿悬停漂移 0.0000 rad；复现录制的示教文件 7 325 点；夹爪状态机到达「已夹到」 |
 
 各项断言内容与未覆盖范围见 [`docs/TESTING.md`](docs/TESTING.md)。
 
-## 软件包
+## 来源
 
-| 包 | 内容 |
-|---|---|
-| `arm_control` | 运动学、重力补偿、直线规划、夹爪状态机、控制节点 |
-| `hardware` | 串口节点、轨迹复现、示教录制、测试节点 |
-| `miku_sim` | 仿真电机、虚拟驱动板、两套测试 |
-| `deep_camera` | RealSense RGB-D 采集与 ArUco 位姿估计 |
-| `aruco` | ArUco 检测器、ROS 2 节点、标记制作资料 |
-| `miku_dummy` | URDF、meshes、RViz2 配置 |
-| `miku_dummy_moveit_config` | MoveIt 2 配置（SRDF、规划器参数） |
-| `miku_moveit_demo` | MoveIt 2 + RViz2 规划演示，轨迹桥接到 `ArmMsg` |
+原始工程是 ROS 1 Noetic 的 catkin 工作空间，未作修改地保留在 [`reference/`](reference/) 下并加
+`COLCON_IGNORE`。本仓库是它的 ROS 2 Jazzy 移植，并在此基础上补了 MoveIt 2 配置与演示、两套仿真替代品
+及其测试，以及 [`CHANGELOG.md`](CHANGELOG.md) 中列出的修复——其中包括一处 `catch` 顺序错误导致串口设备
+掉线被误报，以及 MoveIt 关节限位文件里 `max_acceleration: 0` 导致轨迹"规划成功却从不执行"。
 
 ## 文档
 
-| | |
-|---|---|
-| [`docs/OVERVIEW.md`](docs/OVERVIEW.md) | 控制链路、话题、仿真设计 |
-| [`docs/PORTING.md`](docs/PORTING.md) | ROS 1 → ROS 2 映射规则 |
-| [`docs/TESTING.md`](docs/TESTING.md) | 测试套件、覆盖范围与缺口 |
-| [`docs/RECORDING.md`](docs/RECORDING.md) | 录制演示 |
-| [`CHANGELOG.md`](CHANGELOG.md) | 版本记录 |
+各包内容与参考文档：
+
+- [`arm_control`](src/arm_control) —— 运动学、重力补偿、直线规划、夹爪状态机、控制节点
+- [`hardware`](src/hardware) —— 串口节点、轨迹复现、示教录制、测试节点
+- [`miku_sim`](src/miku_sim) —— 仿真电机、虚拟驱动板、两套测试
+- [`deep_camera`](src/deep_camera) · [`aruco`](src/aruco) —— RealSense RGB-D 采集与 ArUco 位姿估计
+- [`miku_dummy`](src/miku_dummy) · [`miku_dummy_moveit_config`](src/miku_dummy_moveit_config) · [`miku_moveit_demo`](src/miku_moveit_demo) —— URDF、meshes、MoveIt 2 配置与规划演示
+
+[`docs/OVERVIEW.md`](docs/OVERVIEW.md) 控制链路、话题、仿真设计 ·
+[`docs/PORTING.md`](docs/PORTING.md) ROS 1 → ROS 2 映射规则 ·
+[`docs/TESTING.md`](docs/TESTING.md) 测试套件、覆盖范围与缺口 ·
+[`docs/RECORDING.md`](docs/RECORDING.md) 录制演示 ·
+[`CHANGELOG.md`](CHANGELOG.md) 版本记录。
 
 ## 许可
 

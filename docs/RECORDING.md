@@ -1,17 +1,41 @@
 # Recording demos
 
-Two figures in the README are generated from data, not hand-drawn:
+The two clips on the front page come from two different sources:
 
-| Figure | Generator | Source |
-|---|---|---|
-| `docs/figures/demo.gif` | `tools/record_demo.py` | a recorded teach path replayed through the simulator |
-| `docs/figures/demo_rviz.gif` | `tools/rviz_demo.py` | a live MoveIt plan-and-execute run captured from the RViz2 window |
+| Figure | Source |
+|---|---|
+| `docs/figures/demo.gif` | a recorded teach path replayed through the simulator (`tools/record_demo.py`) |
+| `docs/figures/demo_hardware.gif` | the real arm on the bench, filmed by hand, converted with `tools/make_figure_from_video.py` |
+
+`docs/figures/demo_rviz.gif` — the MoveIt plan-and-execute run captured from the RViz2 window by
+`tools/rviz_demo.py` — is still in the repository and still documented below; it moved off the front
+page when the hardware clip took its place.
 
 ## demo.gif — teach path replay
 
 `tools/capture_joint_states.py` records `/joint_states` while `hardware trajectory_track` replays a
 teach file; `tools/record_demo.py` renders the URDF and its STL meshes through VTK at each sampled
 pose. No hardware and no display are involved, so it is reproducible on any machine.
+
+## demo_hardware.gif — the real arm
+
+Source: a hand-held phone clip of the bench, 720 × 1280 at 30 fps, 24.7 s. The take pans between the
+laptop running RViz and the arm itself; the window used here starts on the MotionPlanning panel with
+the interactive marker and cuts to the arm executing the goal. The take itself is not in the
+repository (it is 5.4 MB as MP4), so re-cutting needs the original file.
+
+```bash
+python3 tools/make_figure_from_video.py demo2.mp4 docs/figures/demo_hardware.gif \
+        --start 9.6 --duration 6.0 --crop 0,380,560,1080 --width 400 --fps 8 --colors 32
+```
+
+`--crop` is what makes a portrait phone clip usable: it cuts to the bench *before* the resize, so
+the output is 400 × 500 instead of 400 × 711, and it drops most of the lab background, which is the
+expensive part of a photographic GIF. Result: 45 frames, 2.2 MB.
+
+Two things to know about `--start`/`--duration`: they are seconds of the source, and `--duration` is
+the length of the clip (an earlier version measured it from the seek point, so `--start 10
+--duration 8` produced 18 s).
 
 ## demo_rviz.gif — MoveIt plan and execute
 
@@ -76,11 +100,11 @@ Three things that cost time to find out:
   through `XGetImage`, which looks like a slow X server but is really per-row protocol overhead.
   `XShmGetImage` does the same capture in 5 ms.
 
-## Existing and hardware footage
+## Recording a new hardware clip
 
-Hardware clips can be added alongside the generated figures:
+For the next clip, from a phone or a screen recording:
 
-1. Convert the clip to a repository-sized GIF:
+1. Convert it to a repository-sized GIF:
 
    ```bash
    python3 tools/make_figure_from_video.py <clip>.mp4 docs/figures/hardware.gif \
@@ -89,13 +113,14 @@ Hardware clips can be added alongside the generated figures:
 
    `ffmpeg` is not installed here, so the converter uses OpenCV + Pillow. It accepts anything
    OpenCV can decode (mp4, mov, avi, mkv, m4v). Add `--poster --at 14` for a still frame, or
-   `--mp4` to recompress to h264.
+   `--mp4` to recompress to h264. Portrait phone takes want `--crop` as well; see
+   `demo_hardware.gif` above.
 
-2. Add a centred image block to `README.md` next to the existing figures:
+2. Add a centred image block to `README.md` in place of the one it replaces:
 
    ```html
    <p align="center">
-     <img src="docs/figures/hardware.gif" width="760" alt="..."/>
+     <img src="docs/figures/hardware.gif" width="400" alt="..."/>
    </p>
    ```
 
@@ -107,6 +132,8 @@ laptop and unusable on a phone. If one is too big, in this order:
 1. Shorten `--duration` to 6–8 s. A short loop that shows the motion beats a long one.
 2. Reduce `--width` to 640 — still readable in the README's content column.
 3. Lower `--fps` to 10, then `--colors` to 64.
+4. For photographic footage, crop harder (`--crop`): background detail, not the arm, is what makes
+   a real-world GIF large.
 
-For reference, `demo.gif` is 1.2 MB (85 frames, 760×480) and `demo_rviz.gif` is 0.2 MB (24 frames,
-900×517, 7.5 s).
+For reference, `demo.gif` is 1.2 MB (85 frames, 760×480), `demo_rviz.gif` is 0.2 MB (24 frames,
+900×517, 7.5 s) and `demo_hardware.gif` is 2.2 MB (45 frames, 400×500).

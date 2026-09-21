@@ -22,6 +22,10 @@ python3 tools/make_figure_from_video.py 实拍.mp4 docs/figures/hardware_poster.
 # 4) 只做压缩，不改内容（转成 h264 mp4，便于塞进仓库）
 python3 tools/make_figure_from_video.py 实拍.mov docs/media/hardware.mp4 --mp4
 
+# 5) 竖屏手机录像先裁到机械臂，再缩放（否则 720×1280 会变成 400×711 的长条）
+python3 tools/make_figure_from_video.py 实拍.mp4 docs/figures/demo_hardware.gif \
+        --start 9.6 --duration 6.0 --crop 0,380,560,1080 --width 400 --fps 8 --colors 32
+
 支持的输入：mp4 / mov / avi / mkv / m4v，以及手机常见的 HEVC（取决于本机 OpenCV
 的解码器，若失败先用系统工具转成 h264 mp4）。
 """
@@ -47,12 +51,12 @@ def open_video(path):
     return cap, fps, total, w, h
 
 
-def grab_frames(cap, fps, start, duration, out_fps, width):
-    """按时间区间取帧，并按 out_fps 抽帧、按 width 缩放"""
+def grab_frames(cap, fps, start, duration, out_fps, width, crop=None):
+    """按时间区间取帧，并按 out_fps 抽帧、按 crop 裁切、按 width 缩放"""
     cap.set(cv2.CAP_PROP_POS_MSEC, start * 1000.0)
     step = max(1, int(round(fps / max(out_fps, 0.1))))
     frames, idx, kept = [], 0, 0
-    end_frame = None if duration is None else int(round((start + duration) * fps))
+    end_frame = None if duration is None else int(round(duration * fps))
     while True:
         ok, frame = cap.read()
         if not ok:
@@ -60,6 +64,9 @@ def grab_frames(cap, fps, start, duration, out_fps, width):
         if end_frame is not None and idx >= end_frame:
             break
         if idx % step == 0:
+            if crop:
+                x0, y0, x1, y1 = crop
+                frame = frame[y0:y1, x0:x1]
             rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             im = Image.fromarray(rgb)
             if width and im.width != width:
@@ -98,10 +105,21 @@ def main():
     ap.add_argument("--width", type=int, default=760, help="输出宽度（px）")
     ap.add_argument("--fps", type=float, default=12.0, help="输出帧率")
     ap.add_argument("--colors", type=int, default=96, help="GIF 调色板颜色数（越小体积越小）")
+    ap.add_argument("--crop", default=None,
+                    help="裁切区域 x0,y0,x1,y1（像素，先裁切再缩放；竖屏录像用得上）")
     ap.add_argument("--poster", action="store_true", help="只导出一张静帧 PNG")
     ap.add_argument("--at", type=float, default=None, help="静帧取第几秒（默认取中点）")
     ap.add_argument("--mp4", action="store_true", help="输出 mp4 而不是 gif")
     args = ap.parse_args()
+
+    crop = None
+    if args.crop:
+        try:
+            crop = tuple(int(v) for v in args.crop.split(","))
+            if len(crop) != 4:
+                raise ValueError
+        except ValueError:
+            sys.exit("--crop 需要四个整数：x0,y0,x1,y1")
 
     inp = pathlib.Path(args.input)
     if not inp.exists():
@@ -121,6 +139,8 @@ def main():
         if not ok:
             sys.exit(f"取不到第 {at:.1f} s 的帧")
         im = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+        if crop:
+            im = im.crop(crop)
         if args.width and im.width != args.width:
             im = im.resize((args.width, round(im.height * args.width / im.width)),
                            Image.LANCZOS)
@@ -128,7 +148,7 @@ def main():
         print(f"已写出静帧 {out}（{out.stat().st_size/1024:.0f} KB，取自 {at:.1f} s）")
         return
 
-    frames = grab_frames(cap, fps, args.start, args.duration, args.fps, args.width)
+    frames = grab_frames(cap, fps, args.start, args.duration, args.fps, args.width, crop)
     cap.release()
     if args.mp4 or out.suffix.lower() == ".mp4":
         write_mp4(frames, out, args.fps)

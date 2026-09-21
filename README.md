@@ -11,7 +11,7 @@
 [![C++17](https://img.shields.io/badge/C%2B%2B-17-00599C?logo=cplusplus&logoColor=white)](#build)
 [![License](https://img.shields.io/badge/license-MIT-3DA639)](LICENSE)
 
-[Build](#build) &nbsp;•&nbsp; [Hardware](#with-hardware) &nbsp;•&nbsp; [Simulation](#without-hardware) &nbsp;•&nbsp; [Verification](#verification) &nbsp;•&nbsp; [Docs](#documentation)
+[Build](#build) &nbsp;•&nbsp; [Hardware](#with-hardware) &nbsp;•&nbsp; [Simulation](#without-hardware) &nbsp;•&nbsp; [Verification](#verification) &nbsp;•&nbsp; [Provenance](#provenance)
 
 *English &nbsp;|&nbsp; [中文](README_CN.md)*
 
@@ -26,14 +26,13 @@
 during playback. 50 s at 100 Hz.*
 
 <p align="center">
-  <img src="docs/figures/demo_rviz.gif" width="760"
-       alt="MoveIt planning and execution driven from the RViz2 MotionPlanning panel"/>
+  <img src="docs/figures/demo_hardware.gif" width="400"
+       alt="The real arm on the bench following a goal dragged in the RViz2 MotionPlanning panel"/>
 </p>
 
-*Planning and execution from the RViz2 MotionPlanning panel: MoveIt plans for `manipulator`,
-`trajectory_bridge` converts the trajectory to `ArmMsg(mode=2)`, and the simulated arm follows it.
-Motor playback is slowed to 0.18× so the motion is legible; the run reaches the goal within
-0.01 rad.*
+*Hardware demo. On the real arm — self-built, on the bench — a goal is dragged in the RViz2
+MotionPlanning panel and the physical motors execute it through the same `trajectory_bridge` path
+used in simulation: the motion above, on the robot.*
 
 The arm is six Damiao motors and a gripper on one MCU board, driven over `/dev/ttyACM0` with a
 50-byte down / 46-byte up binary protocol.
@@ -43,8 +42,25 @@ The arm is six Damiao motors and a gripper on one MCU board, driven over `/dev/t
 | **Packages** | `arm_control` · `hardware` · `deep_camera` · `aruco` · `miku_dummy` · `miku_dummy_moveit_config` · `miku_sim` · `miku_moveit_demo` |
 | **Control** | KDL FK/IK, straight-line interpolation, six-channel gravity compensation, 4-state gripper FSM |
 | **Modes** | `mode=1` MIT (stiffness, damping, torque feed-forward) · `mode=2` velocity-limited position |
-| **Simulation** | no hardware required — simulated motors and a protocol-level driver-board peer |
+| **Verification** | 13 checks, no hardware attached — 7 on the serial protocol, 6 on the control pipeline |
 | **Provenance** | ported from ROS 1 Noetic; the original workspace is in [`reference/`](reference/) |
+
+## Why the simulators exist
+
+The control stack can be exercised without the arm, which is what keeps a change to the kinematics,
+the gravity compensator or the gripper FSM testable the same day it is written. Two substitutes cover
+different layers:
+
+- **`sim_motor_board`** replaces the driver board on the ROS side and publishes `/joint_states`,
+  closing the control loop in simulation.
+- **`virtual_motor_board.py`** implements the driver board's side of the wire — `0x86C1` / `0x86C2`
+  framing, field offsets, the ×1000 fixed point. Over a `socat` PTY it exercises the serial protocol
+  by running the real `hardware` binary against it.
+
+![Both paths run the same arm_control binaries; only the motor interface differs](docs/figures/architecture.png)
+
+The controller does not use MoveIt or `ros2_control`; it runs its own KDL kinematics and commands
+the motors in MIT mode.
 
 ## Build
 
@@ -108,19 +124,6 @@ MotionPlanning panel. `trajectory_bridge` publishes the trajectory as `ArmMsg(mo
 `/Arm_tx` at 50 Hz; `speed_scale:=0.2` slows playback for demonstration, and `record:=true`
 switches RViz to the single-panel layout used for recording.
 
-`miku_sim` provides two substitutes, covering different layers:
-
-- **`sim_motor_board`** replaces the driver board on the ROS side and publishes `/joint_states`,
-  closing the control loop in simulation.
-- **`virtual_motor_board.py`** implements the driver board's side of the wire — `0x86C1` / `0x86C2`
-  framing, field offsets, the ×1000 fixed point. Over a `socat` PTY it exercises the serial protocol
-  by running the real `hardware` binary against it.
-
-![Both paths run the same arm_control binaries; only the motor interface differs](docs/figures/architecture.png)
-
-The controller does not use MoveIt or `ros2_control`; it runs its own KDL kinematics and commands
-the motors in MIT mode.
-
 ## Verification
 
 ```bash
@@ -128,49 +131,40 @@ ros2 run miku_sim run_serial_hil_test.sh     # serial protocol, 7 checks
 ros2 run miku_sim run_sim_e2e_test.sh        # control pipeline, 6 checks
 ```
 
-| Serial protocol | Result |
+Both suites run CPU only, on a thin-and-light laptop (Huawei MateBook 14, Intel Core i5-1240P);
+nothing in the stack needs a GPU.
+
+| Suite | What it establishes |
 |---|---|
-| Board init, bidirectional frame flow | pass |
-| Six-joint setpoint accuracy | < 0.002 rad |
-| MIT torque feed-forward, sign and magnitude | pass |
-| Gravity droop removed by feed-forward | pass |
-| Gripper stalls on contact | pass |
-| Board unplugged mid-run | node survives |
+| `run_serial_hil_test.sh` | board init and bidirectional frame flow; six-joint setpoint accuracy < 0.002 rad; MIT torque feed-forward sign and magnitude; gravity droop removed by feed-forward; gripper stalls on contact; node survives the board being unplugged mid-run |
+| `run_sim_e2e_test.sh` | `/joint_states` at 100 Hz; complete TF tree `base_link → link_6`; IK closed loop moves the arm; gravity-compensated hover drift 0.0000 rad; a recorded teach file replays (7 325 points); the gripper FSM reaches *grasped* |
 
-| Control pipeline | Result |
-|---|---|
-| `/joint_states` rate | 100 Hz |
-| TF tree `base_link → link_6` | complete |
-| IK closed loop moves the arm | pass |
-| Gravity-compensated hover drift | 0.0000 rad |
-| Recorded teach file replays | 7 325 points |
-| Gripper FSM reaches *grasped* | pass |
+What each check asserts, and which parts are not covered: [`docs/TESTING.md`](docs/TESTING.md).
 
-See [`docs/TESTING.md`](docs/TESTING.md) for what each check asserts and which parts are not
-covered.
+## Provenance
 
-## Packages
+The original is a ROS 1 Noetic catkin workspace, kept unmodified in
+[`reference/`](reference/) under a `COLCON_IGNORE`. This repository is the ROS 2 Jazzy port of it,
+plus the MoveIt 2 configuration and demo, the two simulation substitutes and their test suites, and
+the fixes listed in [`CHANGELOG.md`](CHANGELOG.md) — among them a `catch` order that made a vanished
+serial device misreported, and a MoveIt joint-limit file with `max_acceleration: 0`, which produced
+trajectories that were planned but never executed.
 
-| Package | Contents |
-|---|---|
-| `arm_control` | kinematics, gravity compensator, linear planner, gripper FSM, control nodes |
-| `hardware` | serial node, trajectory replay, teaching recorder, test nodes |
-| `miku_sim` | simulated motors, virtual driver board, both test suites |
-| `deep_camera` | RealSense RGB-D capture and ArUco pose estimation |
-| `aruco` | ArUco detector, ROS 2 node, marker-production files |
-| `miku_dummy` | URDF, meshes, RViz2 configuration |
-| `miku_dummy_moveit_config` | MoveIt 2 configuration (SRDF, planner parameters) |
-| `miku_moveit_demo` | MoveIt 2 + RViz2 planning demo, trajectory bridge to `ArmMsg` |
+## Docs
 
-## Documentation
+Each package, and the reference documents:
 
-| | |
-|---|---|
-| [`docs/OVERVIEW.md`](docs/OVERVIEW.md) | control pipeline, topics, simulation design |
-| [`docs/PORTING.md`](docs/PORTING.md) | ROS 1 → ROS 2 mapping rules |
-| [`docs/TESTING.md`](docs/TESTING.md) | test suites, coverage and gaps |
-| [`docs/RECORDING.md`](docs/RECORDING.md) | recording demos |
-| [`CHANGELOG.md`](CHANGELOG.md) | release history |
+- [`arm_control`](src/arm_control) — kinematics, gravity compensator, linear planner, gripper FSM, control nodes
+- [`hardware`](src/hardware) — serial node, trajectory replay, teaching recorder, test nodes
+- [`miku_sim`](src/miku_sim) — simulated motors, virtual driver board, both test suites
+- [`deep_camera`](src/deep_camera) · [`aruco`](src/aruco) — RealSense RGB-D capture and ArUco pose estimation
+- [`miku_dummy`](src/miku_dummy) · [`miku_dummy_moveit_config`](src/miku_dummy_moveit_config) · [`miku_moveit_demo`](src/miku_moveit_demo) — URDF, meshes, MoveIt 2 configuration and the planning demo
+
+[`docs/OVERVIEW.md`](docs/OVERVIEW.md) control pipeline, topics, simulation design ·
+[`docs/PORTING.md`](docs/PORTING.md) ROS 1 → ROS 2 mapping rules ·
+[`docs/TESTING.md`](docs/TESTING.md) test suites, coverage and gaps ·
+[`docs/RECORDING.md`](docs/RECORDING.md) recording demos ·
+[`CHANGELOG.md`](CHANGELOG.md) release history.
 
 ## License
 
