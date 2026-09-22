@@ -30,8 +30,8 @@
        alt="实验台上的自制机械臂跟随 RViz2 运动规划面板里拖动的目标"/>
 </p>
 
-*实机演示。在实物（自制机械臂，实验台上）中，用本程序在 RViz2 的 MotionPlanning 面板里拖动机械臂，
-实机通过同一套 `trajectory_bridge` 链路执行，可以达到上面的效果。*
+*实机演示。实验台上的自制机械臂，跟随 RViz2 的 MotionPlanning 面板里拖动的目标，走的是与上面仿真同一套
+`trajectory_bridge` 链路。*
 
 机械臂为六个达妙电机加一个夹爪，挂在同一块 MCU 驱动板上，通过 `/dev/ttyACM0` 以「下行
 50 字节 / 上行 46 字节」的二进制协议通信。
@@ -46,12 +46,9 @@
 
 ## 为什么要做这两套仿真
 
-改动运动学、重力补偿或夹爪状态机之后，不必等机械臂在场就能验证，这是这两套仿真存在的理由。
-它们覆盖不同的层：
-
-- **`sim_motor_board`** 在 ROS 侧替换驱动板并发布 `/joint_states`，使控制回路在仿真中闭环。
-- **`virtual_motor_board.py`** 实现驱动板一侧的协议 —— `0x86C1` / `0x86C2` 帧头、字段偏移、
-  ×1000 定点。经 `socat` 的 PTY 配对，用它测试串口协议，被测对象是真实的 `hardware` 二进制。
+改动运动学、重力补偿或夹爪状态机之后，不必等机械臂在场就能验证。`sim_motor_board` 在 ROS 侧替换驱动板；
+`virtual_motor_board.py` 实现驱动板一侧的协议（`0x86C1` / `0x86C2` 帧头、字段偏移、×1000 定点），
+真实的 `hardware` 二进制经 `socat` 的 PTY 配对跑在它上面。
 
 ![两条路径运行同一批 arm_control 二进制，仅电机接口不同](docs/figures/architecture.png)
 
@@ -137,9 +134,9 @@ ros2 run miku_sim run_sim_e2e_test.sh        # 控制链路，6 项
 ## 来源
 
 原始工程是 ROS 1 Noetic 的 catkin 工作空间，未作修改地保留在 [`reference/`](reference/) 下并加
-`COLCON_IGNORE`。本仓库是它的 ROS 2 Jazzy 移植，并在此基础上补了 MoveIt 2 配置与演示、两套仿真替代品
-及其测试，以及 [`CHANGELOG.md`](CHANGELOG.md) 中列出的修复——其中包括一处 `catch` 顺序错误导致串口设备
-掉线被误报，以及 MoveIt 关节限位文件里 `max_acceleration: 0` 导致轨迹"规划成功却从不执行"。
+`COLCON_IGNORE`。本仓库是它的 ROS 2 Jazzy 移植，并补了 MoveIt 2 配置与演示、两套仿真替代品及其测试，以及
+[`CHANGELOG.md`](CHANGELOG.md) 中列出的修复——其中包括 MoveIt 关节限位文件里 `max_acceleration: 0`
+导致轨迹"规划成功却从不执行"。
 
 ## 文档
 

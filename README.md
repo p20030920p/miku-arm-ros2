@@ -30,9 +30,8 @@ during playback. 50 s at 100 Hz.*
        alt="The real arm on the bench following a goal dragged in the RViz2 MotionPlanning panel"/>
 </p>
 
-*Hardware demo. On the real arm — self-built, on the bench — a goal is dragged in the RViz2
-MotionPlanning panel and the physical motors execute it through the same `trajectory_bridge` path
-used in simulation: the motion above, on the robot.*
+*Hardware demo. The self-built arm on the bench, following a goal dragged in the RViz2
+MotionPlanning panel through the same `trajectory_bridge` path as the simulation above.*
 
 The arm is six Damiao motors and a gripper on one MCU board, driven over `/dev/ttyACM0` with a
 50-byte down / 46-byte up binary protocol.
@@ -47,15 +46,11 @@ The arm is six Damiao motors and a gripper on one MCU board, driven over `/dev/t
 
 ## Why the simulators exist
 
-The control stack can be exercised without the arm, which is what keeps a change to the kinematics,
-the gravity compensator or the gripper FSM testable the same day it is written. Two substitutes cover
-different layers:
-
-- **`sim_motor_board`** replaces the driver board on the ROS side and publishes `/joint_states`,
-  closing the control loop in simulation.
-- **`virtual_motor_board.py`** implements the driver board's side of the wire — `0x86C1` / `0x86C2`
-  framing, field offsets, the ×1000 fixed point. Over a `socat` PTY it exercises the serial protocol
-  by running the real `hardware` binary against it.
+The stack can be exercised without the arm, so a change to the kinematics, the gravity compensator or
+the gripper FSM is testable the day it is written. `sim_motor_board` replaces the driver board on the
+ROS side; `virtual_motor_board.py` implements the board's side of the wire (`0x86C1` / `0x86C2`
+framing, field offsets, the ×1000 fixed point), so the real `hardware` binary runs against it over a
+`socat` PTY.
 
 ![Both paths run the same arm_control binaries; only the motor interface differs](docs/figures/architecture.png)
 
@@ -143,12 +138,11 @@ What each check asserts, and which parts are not covered: [`docs/TESTING.md`](do
 
 ## Provenance
 
-The original is a ROS 1 Noetic catkin workspace, kept unmodified in
-[`reference/`](reference/) under a `COLCON_IGNORE`. This repository is the ROS 2 Jazzy port of it,
-plus the MoveIt 2 configuration and demo, the two simulation substitutes and their test suites, and
-the fixes listed in [`CHANGELOG.md`](CHANGELOG.md) — among them a `catch` order that made a vanished
-serial device misreported, and a MoveIt joint-limit file with `max_acceleration: 0`, which produced
-trajectories that were planned but never executed.
+The original is a ROS 1 Noetic catkin workspace, kept unmodified in [`reference/`](reference/) under a
+`COLCON_IGNORE`. This repository is its ROS 2 Jazzy port, plus the MoveIt 2 configuration and demo,
+the two simulation substitutes and their tests, and the fixes in [`CHANGELOG.md`](CHANGELOG.md) —
+among them a MoveIt joint-limit file with `max_acceleration: 0`, which produced trajectories that
+were planned but never executed.
 
 ## Docs
 
