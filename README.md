@@ -9,7 +9,6 @@
 [![ROS 2](https://img.shields.io/badge/ROS%202-Jazzy-22314E?logo=ros&logoColor=white)](https://docs.ros.org/en/jazzy/)
 [![Ubuntu](https://img.shields.io/badge/Ubuntu-24.04-E95420?logo=ubuntu&logoColor=white)](#build)
 [![C++17](https://img.shields.io/badge/C%2B%2B-17-00599C?logo=cplusplus&logoColor=white)](#build)
-[![License](https://img.shields.io/badge/license-MIT-3DA639)](LICENSE)
 
 [Build](#build) &nbsp;•&nbsp; [Hardware](#with-hardware) &nbsp;•&nbsp; [Simulation](#without-hardware) &nbsp;•&nbsp; [Verification](#verification) &nbsp;•&nbsp; [Provenance](#provenance)
 
@@ -139,7 +138,3 @@ Each package, and the reference documents:
 [`docs/TESTING.md`](docs/TESTING.md) test suites, coverage and gaps ·
 [`docs/RECORDING.md`](docs/RECORDING.md) recording demos ·
 [`CHANGELOG.md`](CHANGELOG.md) release history.
-
-## License
-
-MIT. The bundled ArUco detector is MIT, © 2017 Tentone — see [`src/aruco/LICENSE`](src/aruco/LICENSE).

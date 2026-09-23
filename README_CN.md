@@ -9,7 +9,6 @@
 [![ROS 2](https://img.shields.io/badge/ROS%202-Jazzy-22314E?logo=ros&logoColor=white)](https://docs.ros.org/en/jazzy/)
 [![Ubuntu](https://img.shields.io/badge/Ubuntu-24.04-E95420?logo=ubuntu&logoColor=white)](#构建)
 [![C++17](https://img.shields.io/badge/C%2B%2B-17-00599C?logo=cplusplus&logoColor=white)](#构建)
-[![License](https://img.shields.io/badge/license-MIT-3DA639)](LICENSE)
 
 [构建](#构建) &nbsp;•&nbsp; [使用硬件](#使用硬件) &nbsp;•&nbsp; [无硬件仿真](#无硬件仿真) &nbsp;•&nbsp; [验证](#验证) &nbsp;•&nbsp; [来源](#来源)
 
@@ -137,7 +136,3 @@ ros2 run miku_sim run_sim_e2e_test.sh        # 控制链路，6 项
 [`docs/TESTING.md`](docs/TESTING.md) 测试套件、覆盖范围与缺口 ·
 [`docs/RECORDING.md`](docs/RECORDING.md) 录制演示 ·
 [`CHANGELOG.md`](CHANGELOG.md) 版本记录。
-
-## 许可
-
-MIT。随包附带的 ArUco 检测器为 MIT，© 2017 Tentone —— 见 [`src/aruco/LICENSE`](src/aruco/LICENSE)。
