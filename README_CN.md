@@ -34,25 +34,15 @@
 `trajectory_bridge` 链路。*
 
 机械臂为六个达妙电机加一个夹爪，挂在同一块 MCU 驱动板上，通过 `/dev/ttyACM0` 以「下行
-50 字节 / 上行 46 字节」的二进制协议通信。
+50 字节 / 上行 46 字节」的二进制协议通信。控制器不经过 MoveIt 或 `ros2_control`，而是自己跑
+KDL 运动学、以 MIT 模式下发电机指令。
 
-| | |
-|---|---|
-| **软件包** | `arm_control` · `hardware` · `deep_camera` · `aruco` · `miku_dummy` · `miku_dummy_moveit_config` · `miku_sim` · `miku_moveit_demo` |
-| **控制** | KDL 正逆解、直线插补、六通道重力补偿、四态夹爪状态机 |
-| **模式** | `mode=1` MIT（刚度、阻尼、力矩前馈） · `mode=2` 限速位置控制 |
-| **验证** | 13 项检查，无需接硬件——串口协议 7 项、控制链路 6 项 |
-| **来源** | 由 ROS 1 Noetic 工程移植，原始工作空间见 [`reference/`](reference/) |
+<p align="center">
+  <img src="docs/figures/architecture.png" width="760"
+       alt="两条路径运行同一批 arm_control 二进制，仅电机接口不同"/>
+</p>
 
-## 为什么要做这两套仿真
-
-改动运动学、重力补偿或夹爪状态机之后，不必等机械臂在场就能验证。`sim_motor_board` 在 ROS 侧替换驱动板；
-`virtual_motor_board.py` 实现驱动板一侧的协议（`0x86C1` / `0x86C2` 帧头、字段偏移、×1000 定点），
-真实的 `hardware` 二进制经 `socat` 的 PTY 配对跑在它上面。
-
-![两条路径运行同一批 arm_control 二进制，仅电机接口不同](docs/figures/architecture.png)
-
-控制器不经过 MoveIt 或 `ros2_control`，而是自己跑 KDL 运动学、以 MIT 模式下发电机指令。
+*两条路径运行同一批 `arm_control` 二进制，仅电机接口不同。*
 
 ## 构建
 

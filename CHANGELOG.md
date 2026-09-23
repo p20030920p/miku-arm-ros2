@@ -24,7 +24,10 @@
 - `reference/ros1-original/` — the ROS 1 workspace, unmodified, with a `COLCON_IGNORE`.
 
 ### Changed
-- **README restructured as library documentation**: the two verification tables became one, the
+- **The front page drops the summary table and the simulator rationale**: the
+  package/control/mode/verification/porting table restated what the sections below it already say, and the
+  two paragraphs on why the simulators exist duplicated `docs/OVERVIEW.md`. The architecture figure
+  stays, next to the hardware interface it diagrams.`n- **README restructured as library documentation**: the two verification tables became one, the
   packages and documentation tables are merged, a Provenance section states what the port added over
   the unmodified ROS 1 workspace, and the verification section names the machine the checks ran on
   (Huawei MateBook 14 2022, Intel Core i5-1240P, CPU only). No code change.

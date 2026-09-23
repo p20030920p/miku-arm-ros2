@@ -34,28 +34,15 @@ during playback. 50 s at 100 Hz.*
 MotionPlanning panel through the same `trajectory_bridge` path as the simulation above.*
 
 The arm is six Damiao motors and a gripper on one MCU board, driven over `/dev/ttyACM0` with a
-50-byte down / 46-byte up binary protocol.
+50-byte down / 46-byte up binary protocol. The controller uses neither MoveIt nor `ros2_control`: it
+runs its own KDL kinematics and commands the motors in MIT mode.
 
-| | |
-|---|---|
-| **Packages** | `arm_control` · `hardware` · `deep_camera` · `aruco` · `miku_dummy` · `miku_dummy_moveit_config` · `miku_sim` · `miku_moveit_demo` |
-| **Control** | KDL FK/IK, straight-line interpolation, six-channel gravity compensation, 4-state gripper FSM |
-| **Modes** | `mode=1` MIT (stiffness, damping, torque feed-forward) · `mode=2` velocity-limited position |
-| **Verification** | 13 checks, no hardware attached — 7 on the serial protocol, 6 on the control pipeline |
-| **Provenance** | ported from ROS 1 Noetic; the original workspace is in [`reference/`](reference/) |
+<p align="center">
+  <img src="docs/figures/architecture.png" width="760"
+       alt="Both paths run the same arm_control binaries; only the motor interface differs"/>
+</p>
 
-## Why the simulators exist
-
-The stack can be exercised without the arm, so a change to the kinematics, the gravity compensator or
-the gripper FSM is testable the day it is written. `sim_motor_board` replaces the driver board on the
-ROS side; `virtual_motor_board.py` implements the board's side of the wire (`0x86C1` / `0x86C2`
-framing, field offsets, the ×1000 fixed point), so the real `hardware` binary runs against it over a
-`socat` PTY.
-
-![Both paths run the same arm_control binaries; only the motor interface differs](docs/figures/architecture.png)
-
-The controller does not use MoveIt or `ros2_control`; it runs its own KDL kinematics and commands
-the motors in MIT mode.
+*Both paths run the same `arm_control` binaries; only the motor interface differs.*
 
 ## Build
 
