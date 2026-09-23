@@ -37,13 +37,6 @@
 50 字节 / 上行 46 字节」的二进制协议通信。控制器不经过 MoveIt 或 `ros2_control`，而是自己跑
 KDL 运动学、以 MIT 模式下发电机指令。
 
-<p align="center">
-  <img src="docs/figures/architecture.png" width="760"
-       alt="两条路径运行同一批 arm_control 二进制，仅电机接口不同"/>
-</p>
-
-*两条路径运行同一批 `arm_control` 二进制，仅电机接口不同。*
-
 ## 构建
 
 需要 Ubuntu 24.04 与 ROS 2 Jazzy。

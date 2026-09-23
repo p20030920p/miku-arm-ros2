@@ -37,13 +37,6 @@ The arm is six Damiao motors and a gripper on one MCU board, driven over `/dev/t
 50-byte down / 46-byte up binary protocol. The controller uses neither MoveIt nor `ros2_control`: it
 runs its own KDL kinematics and commands the motors in MIT mode.
 
-<p align="center">
-  <img src="docs/figures/architecture.png" width="760"
-       alt="Both paths run the same arm_control binaries; only the motor interface differs"/>
-</p>
-
-*Both paths run the same `arm_control` binaries; only the motor interface differs.*
-
 ## Build
 
 Requires Ubuntu 24.04 and ROS 2 Jazzy.
