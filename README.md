@@ -10,7 +10,7 @@
 [![Ubuntu](https://img.shields.io/badge/Ubuntu-24.04-E95420?logo=ubuntu&logoColor=white)](#build)
 [![C++17](https://img.shields.io/badge/C%2B%2B-17-00599C?logo=cplusplus&logoColor=white)](#build)
 
-[Build](#build) &nbsp;•&nbsp; [Hardware](#with-hardware) &nbsp;•&nbsp; [Simulation](#without-hardware) &nbsp;•&nbsp; [Verification](#verification) &nbsp;•&nbsp; [Provenance](#provenance)
+[Build](#build) &nbsp;•&nbsp; [Hardware](#with-hardware) &nbsp;•&nbsp; [Simulation](#without-hardware)
 
 *English &nbsp;|&nbsp; [中文](README_CN.md)*
 
@@ -97,44 +97,3 @@ interactive marker in the 3D view to set a goal, then use **Plan** and **Execute
 MotionPlanning panel. `trajectory_bridge` publishes the trajectory as `ArmMsg(mode=2)` on
 `/Arm_tx` at 50 Hz; `speed_scale:=0.2` slows playback for demonstration, and `record:=true`
 switches RViz to the single-panel layout used for recording.
-
-## Verification
-
-```bash
-ros2 run miku_sim run_serial_hil_test.sh     # serial protocol, 7 checks
-ros2 run miku_sim run_sim_e2e_test.sh        # control pipeline, 6 checks
-```
-
-Both suites run CPU only — 13 checks in total, with no hardware attached — on a thin-and-light
-laptop (Huawei MateBook 14, Intel Core i5-1240P); nothing in the stack needs a GPU.
-
-| Suite | What it establishes |
-|---|---|
-| `run_serial_hil_test.sh` | board init and bidirectional frame flow; six-joint setpoint accuracy < 0.002 rad; MIT torque feed-forward sign and magnitude; gravity droop removed by feed-forward; gripper stalls on contact; node survives the board being unplugged mid-run |
-| `run_sim_e2e_test.sh` | `/joint_states` at 100 Hz; complete TF tree `base_link → link_6`; IK closed loop moves the arm; gravity-compensated hover drift 0.0000 rad; a recorded teach file replays (7 325 points); the gripper FSM reaches *grasped* |
-
-What each check asserts, and which parts are not covered: [`docs/TESTING.md`](docs/TESTING.md).
-
-## Provenance
-
-The original is a ROS 1 Noetic catkin workspace, kept unmodified in [`reference/`](reference/) under a
-`COLCON_IGNORE`. This repository is its ROS 2 Jazzy port, plus the MoveIt 2 configuration and demo,
-the two simulation substitutes and their tests, and the fixes in [`CHANGELOG.md`](CHANGELOG.md) —
-among them a MoveIt joint-limit file with `max_acceleration: 0`, which produced trajectories that
-were planned but never executed.
-
-## Docs
-
-Each package, and the reference documents:
-
-- [`arm_control`](src/arm_control) — kinematics, gravity compensator, linear planner, gripper FSM, control nodes
-- [`hardware`](src/hardware) — serial node, trajectory replay, teaching recorder, test nodes
-- [`miku_sim`](src/miku_sim) — simulated motors, virtual driver board, both test suites
-- [`deep_camera`](src/deep_camera) · [`aruco`](src/aruco) — RealSense RGB-D capture and ArUco pose estimation
-- [`miku_dummy`](src/miku_dummy) · [`miku_dummy_moveit_config`](src/miku_dummy_moveit_config) · [`miku_moveit_demo`](src/miku_moveit_demo) — URDF, meshes, MoveIt 2 configuration and the planning demo
-
-[`docs/OVERVIEW.md`](docs/OVERVIEW.md) control pipeline, topics, simulation design ·
-[`docs/PORTING.md`](docs/PORTING.md) ROS 1 → ROS 2 mapping rules ·
-[`docs/TESTING.md`](docs/TESTING.md) test suites, coverage and gaps ·
-[`docs/RECORDING.md`](docs/RECORDING.md) recording demos ·
-[`CHANGELOG.md`](CHANGELOG.md) release history.

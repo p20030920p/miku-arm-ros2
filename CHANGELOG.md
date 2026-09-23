@@ -24,6 +24,10 @@
 - `reference/ros1-original/` — the ROS 1 workspace, unmodified, with a `COLCON_IGNORE`.
 
 ### Changed
+- **Verification, Provenance and Docs are off the front page.** The two test commands, the suite table, the
+  porting note and the package/document index are gone from both READMEs; the nav links that pointed at the
+  first two went with them. Nothing was deleted from the repository: `docs/`, `reference/` and both test
+  scripts are unchanged. No code change.
 - **Licence talk is off the front page**: the badge and the `## License` section are gone from both
   READMEs; `LICENSE` and the bundled `src/aruco/LICENSE` are untouched. No code change.`n- **The architecture figure is off the front page**: the READMEs no longer show
   `docs/figures/architecture.png`. The file and its generator (`tools/make_architecture.py`, checked by

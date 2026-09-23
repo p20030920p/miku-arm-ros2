@@ -10,7 +10,7 @@
 [![Ubuntu](https://img.shields.io/badge/Ubuntu-24.04-E95420?logo=ubuntu&logoColor=white)](#构建)
 [![C++17](https://img.shields.io/badge/C%2B%2B-17-00599C?logo=cplusplus&logoColor=white)](#构建)
 
-[构建](#构建) &nbsp;•&nbsp; [使用硬件](#使用硬件) &nbsp;•&nbsp; [无硬件仿真](#无硬件仿真) &nbsp;•&nbsp; [验证](#验证) &nbsp;•&nbsp; [来源](#来源)
+[构建](#构建) &nbsp;•&nbsp; [使用硬件](#使用硬件) &nbsp;•&nbsp; [无硬件仿真](#无硬件仿真)
 
 *[English](README.md) &nbsp;|&nbsp; 中文*
 
@@ -96,43 +96,3 @@ ros2 launch miku_moveit_demo moveit_demo.launch.py
 再点 MotionPlanning 面板的 **Plan** 与 **Execute**。`trajectory_bridge` 以 50 Hz 把轨迹作为
 `ArmMsg(mode=2)` 发布到 `/Arm_tx`；`speed_scale:=0.2` 放慢回放便于演示，`record:=true`
 把 RViz 切到录制用的单面板布局。
-
-## 验证
-
-```bash
-ros2 run miku_sim run_serial_hil_test.sh     # 串口协议，7 项
-ros2 run miku_sim run_sim_e2e_test.sh        # 控制链路，6 项
-```
-
-两套测试共 13 项，全部无需接硬件、只跑 CPU，在一台轻薄本上完成（华为 MateBook 14，Intel Core i5-1240P）；
-整条链路不需要 GPU。
-
-| 套件 | 验证内容 |
-|---|---|
-| `run_serial_hil_test.sh` | 驱动板初始化与双向帧流；六关节定位精度 < 0.002 rad；MIT 力矩前馈符号与幅值；重力下垂被前馈消除；夹爪接触后卡住；运行中拔掉驱动板节点不退出 |
-| `run_sim_e2e_test.sh` | `/joint_states` 频率 100 Hz；TF 树 `base_link → link_6` 完整；IK 闭环使机械臂运动；重力补偿悬停漂移 0.0000 rad；复现录制的示教文件 7 325 点；夹爪状态机到达「已夹到」 |
-
-各项断言内容与未覆盖范围见 [`docs/TESTING.md`](docs/TESTING.md)。
-
-## 来源
-
-原始工程是 ROS 1 Noetic 的 catkin 工作空间，未作修改地保留在 [`reference/`](reference/) 下并加
-`COLCON_IGNORE`。本仓库是它的 ROS 2 Jazzy 移植，并补了 MoveIt 2 配置与演示、两套仿真替代品及其测试，以及
-[`CHANGELOG.md`](CHANGELOG.md) 中列出的修复——其中包括 MoveIt 关节限位文件里 `max_acceleration: 0`
-导致轨迹"规划成功却从不执行"。
-
-## 文档
-
-各包内容与参考文档：
-
-- [`arm_control`](src/arm_control) —— 运动学、重力补偿、直线规划、夹爪状态机、控制节点
-- [`hardware`](src/hardware) —— 串口节点、轨迹复现、示教录制、测试节点
-- [`miku_sim`](src/miku_sim) —— 仿真电机、虚拟驱动板、两套测试
-- [`deep_camera`](src/deep_camera) · [`aruco`](src/aruco) —— RealSense RGB-D 采集与 ArUco 位姿估计
-- [`miku_dummy`](src/miku_dummy) · [`miku_dummy_moveit_config`](src/miku_dummy_moveit_config) · [`miku_moveit_demo`](src/miku_moveit_demo) —— URDF、meshes、MoveIt 2 配置与规划演示
-
-[`docs/OVERVIEW.md`](docs/OVERVIEW.md) 控制链路、话题、仿真设计 ·
-[`docs/PORTING.md`](docs/PORTING.md) ROS 1 → ROS 2 映射规则 ·
-[`docs/TESTING.md`](docs/TESTING.md) 测试套件、覆盖范围与缺口 ·
-[`docs/RECORDING.md`](docs/RECORDING.md) 录制演示 ·
-[`CHANGELOG.md`](CHANGELOG.md) 版本记录。
