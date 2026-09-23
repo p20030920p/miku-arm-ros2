@@ -24,7 +24,7 @@
 - `reference/ros1-original/` — the ROS 1 workspace, unmodified, with a `COLCON_IGNORE`.
 
 ### Changed
-- **The front page drops the summary table and the simulator rationale**: the
+- **The verification section keeps the total**: dropping the front-page table also dropped the only`n  place the aggregate count was written, so the two suites now state it in prose (13 checks, no hardware`n  attached). No code change.`n- **The front page drops the summary table and the simulator rationale**: the
   package/control/mode/verification/porting table restated what the sections below it already say, and the
   two paragraphs on why the simulators exist duplicated `docs/OVERVIEW.md`. The architecture figure
   stays, next to the hardware interface it diagrams.`n- **README restructured as library documentation**: the two verification tables became one, the

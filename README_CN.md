@@ -112,7 +112,8 @@ ros2 run miku_sim run_serial_hil_test.sh     # 串口协议，7 项
 ros2 run miku_sim run_sim_e2e_test.sh        # 控制链路，6 项
 ```
 
-两套测试都只跑 CPU，在一台轻薄本上完成（华为 MateBook 14，Intel Core i5-1240P）；整条链路不需要 GPU。
+两套测试共 13 项，全部无需接硬件、只跑 CPU，在一台轻薄本上完成（华为 MateBook 14，Intel Core i5-1240P）；
+整条链路不需要 GPU。
 
 | 套件 | 验证内容 |
 |---|---|

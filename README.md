@@ -113,8 +113,8 @@ ros2 run miku_sim run_serial_hil_test.sh     # serial protocol, 7 checks
 ros2 run miku_sim run_sim_e2e_test.sh        # control pipeline, 6 checks
 ```
 
-Both suites run CPU only, on a thin-and-light laptop (Huawei MateBook 14, Intel Core i5-1240P);
-nothing in the stack needs a GPU.
+Both suites run CPU only — 13 checks in total, with no hardware attached — on a thin-and-light
+laptop (Huawei MateBook 14, Intel Core i5-1240P); nothing in the stack needs a GPU.
 
 | Suite | What it establishes |
 |---|---|
